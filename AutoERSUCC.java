@@ -134,6 +134,8 @@ public class AutoERSUCC extends LinearOpMode {
             BLM.setPower(power);
 
             power = power * -1;
+
+            sleep(1000);
         }
     }
 
