@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.robotcontroller.internal;
 
 import android.graphics.Color;
 
@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -23,6 +24,8 @@ public class AutoGabo extends LinearOpMode {
     private DcMotor FRM = null;
     private DcMotor BLM = null;
     private DcMotor BRM = null;
+
+    private Servo Arm = null;
 
     private BNO055IMU imu; //declare imu
 
@@ -41,7 +44,9 @@ public class AutoGabo extends LinearOpMode {
     private final int BlueThreshold = 180; //Anything above this number will be considered blue
 
     final private double NormPower = 0.5; //The normal power to give to motors to drive
+    final private double MinPower = 0.15;
 
+    final private double ArmRestPosition = 0;
     public void runOpMode() //when you press init
     {
         //Init
@@ -51,30 +56,27 @@ public class AutoGabo extends LinearOpMode {
         FRM  = hardwareMap.get(DcMotor.class, "FRM");
         BLM  = hardwareMap.get(DcMotor.class, "BLM");
         BRM  = hardwareMap.get(DcMotor.class, "BRM");
-
         FLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); //if we set the power to 0 we want the motors to stop
         FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); //if we don't set it they will be in neutral and friction will slow it
         BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
         FLM.setDirection(DcMotor.Direction.REVERSE); //reverse the motors
         BLM.setDirection(DcMotor.Direction.REVERSE);
-
 
         CS = hardwareMap.get(ColorSensor.class, "CS"); //get color sensor
         CS.enableLed(false); //turn off led
 
+        Arm = hardwareMap.servo.get("Arm");
+        Arm.setDirection(Servo.Direction.FORWARD);
+        Arm.setPosition(ArmRestPosition);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
-
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
         parameters.mode = BNO055IMU.SensorMode.IMU;
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
         parameters.loggingEnabled = false;
-
         imu.initialize(parameters); //initalizes the imu
-
         while (!isStopRequested() && !imu.isGyroCalibrated()) {
             sleep(50);
             idle();
@@ -93,7 +95,7 @@ public class AutoGabo extends LinearOpMode {
     }
 
     private void DriveToTape() {
-        resetAngle();
+        ResetAngle();
         CS.enableLed(true); //turn on LED
         Color.RGBToHSV((int) (CS.red() * SCALE_FACTOR), //get readings before starting
                 (int) (CS.green() * SCALE_FACTOR),
@@ -114,8 +116,10 @@ public class AutoGabo extends LinearOpMode {
 
     public void Drive(double forward, double sideways, double rotation) { //make a function to drive
         double correction = 0; //default 0
-        if (rotation == 0) correction = checkDirection(); //if there isn't any rotation then use correction
+        if (rotation == 0) correction = CheckDirection(); //if there isn't any rotation then use correction
 
+        telemetry.addData("Correction", correction);
+        telemetry.update();
         FRM.setPower((forward + sideways + rotation) + correction);
         FLM.setPower((forward - sideways - rotation) - correction);
         BRM.setPower((forward - sideways + rotation) + correction);
@@ -134,7 +138,7 @@ public class AutoGabo extends LinearOpMode {
      *
      * @return Angle in degrees. + = left, - = right.
      */
-    private double getAngle()
+    private double GetAngle()
     {
         Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES); //gets the angle
 
@@ -155,7 +159,7 @@ public class AutoGabo extends LinearOpMode {
     /**
      * Resets the cumulative angle tracking to zero.
      */
-    private void resetAngle() {
+    private void ResetAngle() {
         lastAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES); //sets lastAngles to current angles
 
         globalAngle = 0; //global angle is set to 0
@@ -165,12 +169,12 @@ public class AutoGabo extends LinearOpMode {
      * See if we are moving in a straight line and if not return a power correction value.
      * @return Power adjustment, + is adjust left - is adjust right.
      */
-    private double checkDirection()
+    private double CheckDirection()
     {
         double correction;
         double gain = .10; //how sensitive the correction is
 
-        double angle = getAngle();  //get the total amount the angle has changed since last reset
+        double angle = GetAngle();  //get the total amount the angle has changed since last reset
 
         if (angle == 0)
             correction = 0;             // no adjustment.
@@ -181,5 +185,61 @@ public class AutoGabo extends LinearOpMode {
 
         return correction;
     }
+    /**
+     * Rotate left or right the number of degrees. Does not support turning more than 180 degrees.
+     *
+     * @param degrees Degrees to turn, + is left - is right
+     */
+    private void Rotate(int degrees, double power) {
+        telemetry.addData("Rotating", true); //informs
+        telemetry.update();
 
+        ResetAngle(); //sets starting angle and resets the amount turned to 0
+
+        // GetAngle() returns + when rotating counter clockwise (left) and - when rotating clockwise (right).
+        double DegreesCubed = degrees * degrees * degrees;
+        double slope = -power / DegreesCubed; //gets the slope of the graph that is needed to make y = 0 when totalNeeded to travel is x
+
+        // rotate until turn is completed.
+        if (degrees < 0) {
+            // On right turn we have to get off zero first.
+            while (!isStopRequested() && GetAngle() == 0) {
+                double currentAngle = GetAngle();
+                double currentAngleCubed = currentAngle * currentAngle * currentAngle;
+                double newPower = slope * currentAngleCubed + power; // the power is the x value in that position
+                if (newPower < MinPower) newPower = MinPower;
+                if (newPower <= 0) newPower = 0;
+                telemetry.addData("Power: ", newPower);
+                telemetry.update();
+                Drive(0, 0, newPower);
+            }
+
+            while (!isStopRequested() && GetAngle() > degrees) {
+                double currentAngle = GetAngle();
+                double CurrentAngledCubed = currentAngle * currentAngle * currentAngle;
+                double newPower = slope * CurrentAngledCubed + power; // the power is the x value in that position
+                if (newPower < MinPower) newPower = MinPower;
+                if (newPower <= 0) newPower = 0;
+                telemetry.addData("Power: ", newPower);
+                telemetry.update();
+                Drive(0, 0, newPower);
+            } //once it starts turning slightly more than it should.
+        } else {
+            // left turn.
+            while (!isStopRequested() && GetAngle() < degrees) {
+                double currentAngle = GetAngle();
+                double CurrentAngleCubed = currentAngle * currentAngle * currentAngle;
+                double newPower = slope * CurrentAngleCubed + power; // the power is the x value in that position
+                if (newPower < MinPower) newPower = MinPower;
+                if (newPower <= 0) newPower = 0;
+                telemetry.addData("Power: ", -newPower);
+                telemetry.update();
+                Drive(0,0 ,-newPower);
+            }
+        }
+
+
+        // turn the motors off.
+        Stop();
+    }
 }
