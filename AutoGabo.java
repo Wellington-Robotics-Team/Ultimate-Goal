@@ -1,81 +1,74 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted (subject to the limitations in the disclaimer below) provided that
- * the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this list
- * of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice, this
- * list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
- *
- * Neither the name of FIRST nor the names of its contributors may be used to endorse or
- * promote products derived from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
- * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 package org.firstinspires.ftc.robotcontroller.internal;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import android.graphics.Color;
 
-import org.firstinspires.ftc.robotcore.external.Func;
-import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-import java.util.Locale;
+//This auto was made by Gabo Gang on Oct 15 2019
 
-/**
- * This is a tele op mode that will be used during driver control
- */
+@Autonomous(name = "AutoGabo", group = "Auto")
+public class AutoGabo extends LinearOpMode {
 
-//Made by Gabo on October 8th, 2019
+    //declare motors
+    private DcMotor FLM = null;
+    private DcMotor FRM = null;
+    private DcMotor BLM = null;
+    private DcMotor BRM = null;
 
-@TeleOp(name = "Gabo Op", group = "Iterative Opmode")
-public class Gabo_Op extends OpMode {
-    // Declare motors out here so we can use them globally
-    private DcMotor FLM = null; //private class name = null
-    private DcMotor FRM = null; //private because it's good coding practice
-    private DcMotor BLM = null; //DcMotor because that is what we will be assigning it to
-    private DcMotor BRM = null; //BRM because it is the Back Right Motor (can be anything you want but make it readable)
+    private Servo Arm = null;
 
     private BNO055IMU imu; //declare imu
-    Acceleration gravity;
 
-    private final double Power = 0.5; //decimal number that won't be changed named Power
+    private Orientation lastAngles = new Orientation(); //sets the last angle to whatever the robot last had. This is just to avoid errors
 
-    /*
-     * Code to run ONCE when the driver hits INIT
-     */
-    @Override
-    public void init() {
-        telemetry.addData("Status", "Initializing"); //display on the drivers phone that its working
+    private double globalAngle; //the number of degrees the robot has turned
 
-        FLM = hardwareMap.get(DcMotor.class, "FLM"); //Go into the config and get the device named "FLM" and assign it to FLM
-        FRM = hardwareMap.get(DcMotor.class, "FRM"); //device name doesn't have to be the same as the variable name
-        BLM = hardwareMap.get(DcMotor.class, "BLM"); //DcMotor.class because that is what the object is
-        BRM = hardwareMap.get(DcMotor.class, "BRM");
+    //declare color sensor
+    private ColorSensor CS = null;
 
-        //Make it so we don't have to add flip the sign of the power we are setting to half the motors
-        FRM.setDirection(DcMotor.Direction.REVERSE); //Run the right side of the robot backwards
-        BRM.setDirection(DcMotor.Direction.REVERSE); //the right motors are facing differently than the left handed ones
+    private final double SCALE_FACTOR = 255; //For color sensor readings (make differences more obvious
+
+    private float hsvValues[] = {0F, 0F, 0F}; //store values
+
+    private final int RedThreshold = 50; //Anything below this number will be considered red
+    private final int BlueThreshold = 180; //Anything above this number will be considered blue
+
+    final private double NormPower = 0.5; //The normal power to give to motors to drive
+    final private double MinPower = 0.15;
+
+    final private double ArmRestPosition = 0;
+    public void runOpMode() //when you press init
+    {
+        //Init
+
+
+        FLM  = hardwareMap.get(DcMotor.class, "FLM"); //get the motors from the config
+        FRM  = hardwareMap.get(DcMotor.class, "FRM");
+        BLM  = hardwareMap.get(DcMotor.class, "BLM");
+        BRM  = hardwareMap.get(DcMotor.class, "BRM");
+        FLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); //if we set the power to 0 we want the motors to stop
+        FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); //if we don't set it they will be in neutral and friction will slow it
+        BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        FLM.setDirection(DcMotor.Direction.REVERSE); //reverse the motors
+        BLM.setDirection(DcMotor.Direction.REVERSE);
+
+        CS = hardwareMap.get(ColorSensor.class, "CS"); //get color sensor
+        CS.enableLed(false); //turn off led
+
+        Arm = hardwareMap.servo.get("Arm");
+        Arm.setDirection(Servo.Direction.FORWARD);
+        Arm.setPosition(ArmRestPosition);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
@@ -84,67 +77,170 @@ public class Gabo_Op extends OpMode {
         parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
         parameters.loggingEnabled = false;
         imu.initialize(parameters); //initalizes the imu
-
-        while (!imu.isGyroCalibrated()) {
-            telemetry.addData("Status", "Calibrating");
-            telemetry.update();
+        while (!isStopRequested() && !imu.isGyroCalibrated()) {
+            sleep(50);
+            idle();
         }
-        telemetry.addData("Status", "Initialized");   //
+
+        // Tell the driver that initialization is complete.
+        telemetry.addData("Status", "Initialized");
+
         telemetry.update();
+
+        waitForStart(); //waits for the start button
+
+        //play
+        DriveToTape(); //run function (easier to read)
+
     }
 
-    /*
-     * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
+
+    private void DriveToTape() {
+        ResetAngle();
+        CS.enableLed(true); //turn on LED
+        Color.RGBToHSV((int) (CS.red() * SCALE_FACTOR), //get readings before starting
+                (int) (CS.green() * SCALE_FACTOR),
+                (int) (CS.blue() * SCALE_FACTOR),
+                hsvValues);
+
+        while (!isStopRequested() && hsvValues[0] > RedThreshold && hsvValues[0] < BlueThreshold) { //run until the driver presses stop or its on red or blue tape
+            Color.RGBToHSV((int) (CS.red() * SCALE_FACTOR), //check readings again
+                    (int) (CS.green() * SCALE_FACTOR),
+                    (int) (CS.blue() * SCALE_FACTOR),
+                    hsvValues);
+            Drive(NormPower, 0, 0); //drive forward at the normal speed
+        }
+        //Driver pressed stop or we are on tape
+        Stop(); //stop the robot
+        CS.enableLed(false); //turn off LED
+    }
+
+    public void Drive(double forward, double sideways, double rotation) { //make a function to drive
+        double correction = 0; //default 0
+        if (rotation == 0) correction = CheckDirection(); //if there isn't any rotation then use correction
+
+        telemetry.addData("Correction", correction);
+        telemetry.update();
+        FRM.setPower((forward + sideways + rotation) + correction);
+        FLM.setPower((forward - sideways - rotation) - correction);
+        BRM.setPower((forward - sideways + rotation) + correction);
+        BLM.setPower((forward + sideways - rotation) - correction);
+    }
+
+    private void Stop() {  //stop the robot
+        FRM.setPower(0); //set all motors to 0 power
+        FLM.setPower(0);
+        BRM.setPower(0);
+        BLM.setPower(0);
+    }
+
+    /**
+     * Get current cumulative angle rotation from last reset.
+     *
+     * @return Angle in degrees. + = left, - = right.
      */
-    @Override
-    public void init_loop() {
+    private double GetAngle()
+    {
+        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES); //gets the angle
+
+        double deltaAngle = angles.firstAngle - lastAngles.firstAngle; //deltaAngle is the current angle minus the last angle it got
+
+        if (deltaAngle < -180) //switches it to use 0 to 360 instead of -180 to 180
+            deltaAngle += 360;
+        else if (deltaAngle > 180)
+            deltaAngle -= 360;
+
+        globalAngle += deltaAngle; //adds the deltaAngle to the globalAngle
+
+        lastAngles = angles; //lastAngle is the anlges
+
+        return globalAngle; //returns the amount turned
     }
 
-    /*
-     * Code to run ONCE when the driver hits PLAY
+    /**
+     * Resets the cumulative angle tracking to zero.
      */
-    @Override
-    public void start() {
+    private void ResetAngle() {
+        lastAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES); //sets lastAngles to current angles
 
+        globalAngle = 0; //global angle is set to 0
     }
 
-    /*
-     * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
+    /**
+     * See if we are moving in a straight line and if not return a power correction value.
+     * @return Power adjustment, + is adjust left - is adjust right.
      */
-    @Override
-    public void loop() {
-        telemetry.addData("Status", "Running"); //inform the driver
+    private double CheckDirection()
+    {
+        double correction;
+        double gain = .10; //how sensitive the correction is
 
-        //Calculate the power to set to each motor
+        double angle = GetAngle();  //get the total amount the angle has changed since last reset
 
-        //left side you subtract right_stick_x
-        double FrontLeftVal = (gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x) * Power; //front subtract left_stick_x
-        double BackLeftVal = (gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x) * Power; //back subtract left_stick_x
+        if (angle == 0)
+            correction = 0;             // no adjustment.
+        else
+            correction = -angle;        // reverse sign of angle for correction.
 
-        //right side you add right_stick_x
-        double FrontRightVal = (gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x) * Power; //front add left_stick_x
-        double BackRightVal = (gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x) * Power; //back subtract left_stick_x
+        correction = correction * gain;
 
-        FLM.setPower(FrontLeftVal); //set the power to the motor
-        FRM.setPower(FrontRightVal);
-        BLM.setPower(BackLeftVal);
-        BRM.setPower(BackRightVal);
-
-        gravity = imu.getGravity();
-
-        telemetry.addData("xAccel", gravity.xAccel);
-        telemetry.addData("yAccel", gravity.yAccel);
-        telemetry.addData("zAccel", gravity.zAccel);
-
-
-        telemetry.update(); //update the telemetry
+        return correction;
     }
-
-    /*
-     * Code to run ONCE after the driver hits STOP
+    /**
+     * Rotate left or right the number of degrees. Does not support turning more than 180 degrees.
+     *
+     * @param degrees Degrees to turn, + is left - is right
      */
-    @Override
-    public void stop() {
-    }
+    private void Rotate(int degrees, double power) {
+        telemetry.addData("Rotating", true); //informs
+        telemetry.update();
 
+        ResetAngle(); //sets starting angle and resets the amount turned to 0
+
+        // GetAngle() returns + when rotating counter clockwise (left) and - when rotating clockwise (right).
+        double DegreesCubed = degrees * degrees * degrees;
+        double slope = -power / DegreesCubed; //gets the slope of the graph that is needed to make y = 0 when totalNeeded to travel is x
+
+        // rotate until turn is completed.
+        if (degrees < 0) {
+            // On right turn we have to get off zero first.
+            while (!isStopRequested() && GetAngle() == 0) {
+                double currentAngle = GetAngle();
+                double currentAngleCubed = currentAngle * currentAngle * currentAngle;
+                double newPower = slope * currentAngleCubed + power; // the power is the x value in that position
+                if (newPower < MinPower) newPower = MinPower;
+                if (newPower <= 0) newPower = 0;
+                telemetry.addData("Power: ", newPower);
+                telemetry.update();
+                Drive(0, 0, newPower);
+            }
+
+            while (!isStopRequested() && GetAngle() > degrees) {
+                double currentAngle = GetAngle();
+                double CurrentAngledCubed = currentAngle * currentAngle * currentAngle;
+                double newPower = slope * CurrentAngledCubed + power; // the power is the x value in that position
+                if (newPower < MinPower) newPower = MinPower;
+                if (newPower <= 0) newPower = 0;
+                telemetry.addData("Power: ", newPower);
+                telemetry.update();
+                Drive(0, 0, newPower);
+            } //once it starts turning slightly more than it should.
+        } else {
+            // left turn.
+            while (!isStopRequested() && GetAngle() < degrees) {
+                double currentAngle = GetAngle();
+                double CurrentAngleCubed = currentAngle * currentAngle * currentAngle;
+                double newPower = slope * CurrentAngleCubed + power; // the power is the x value in that position
+                if (newPower < MinPower) newPower = MinPower;
+                if (newPower <= 0) newPower = 0;
+                telemetry.addData("Power: ", -newPower);
+                telemetry.update();
+                Drive(0,0 ,-newPower);
+            }
+        }
+
+
+        // turn the motors off.
+        Stop();
+    }
 }
