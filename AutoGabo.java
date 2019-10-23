@@ -7,11 +7,13 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 //This auto was made by Gabo Gang on Oct 15 2019
@@ -25,6 +27,8 @@ public class AutoGabo extends LinearOpMode {
     private DcMotor BLM = null;
     private DcMotor BRM = null;
 
+    private DistanceSensor RightDistanceSensor;
+
     private Servo Arm = null;
 
     private BNO055IMU imu; //declare imu
@@ -35,6 +39,7 @@ public class AutoGabo extends LinearOpMode {
 
     //declare color sensor
     private ColorSensor CS = null;
+    private ColorSensor SideCS = null;
 
     private final double SCALE_FACTOR = 255; //For color sensor readings (make differences more obvious
 
@@ -47,11 +52,11 @@ public class AutoGabo extends LinearOpMode {
     final private double MinPower = 0.15;
 
     final private double ArmRestPosition = 0;
+
+    final private int DistanceOffset = 0;
     public void runOpMode() //when you press init
     {
         //Init
-
-
         FLM  = hardwareMap.get(DcMotor.class, "FLM"); //get the motors from the config
         FRM  = hardwareMap.get(DcMotor.class, "FRM");
         BLM  = hardwareMap.get(DcMotor.class, "BLM");
@@ -64,11 +69,14 @@ public class AutoGabo extends LinearOpMode {
         BLM.setDirection(DcMotor.Direction.REVERSE);
 
         CS = hardwareMap.get(ColorSensor.class, "CS"); //get color sensor
-        CS.enableLed(false); //turn off led
+
+        SideCS = hardwareMap.get(ColorSensor.class, "SideCS");
 
         Arm = hardwareMap.servo.get("Arm");
         Arm.setDirection(Servo.Direction.FORWARD);
         Arm.setPosition(ArmRestPosition);
+
+        RightDistanceSensor = hardwareMap.get(DistanceSensor.class, "RDS");
 
         imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
@@ -90,10 +98,25 @@ public class AutoGabo extends LinearOpMode {
         waitForStart(); //waits for the start button
 
         //play
-        DriveToTape(); //run function (easier to read)
+        DriveToBrick();
 
     }
 
+    private void ScanForSkyStone() {
+        ResetAngle();
+        while (SideCS.alpha() < 50 && !isStopRequested()) {
+            Drive(-MinPower, 0, 0);
+        }
+        stop();
+    }
+    private void DriveToBrick() {
+        ResetAngle();
+
+        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 25 + DistanceOffset && !isStopRequested()) {
+            Drive(0, MinPower, 0);
+        }
+        Stop();
+    }
 
     private void DriveToTape() {
         ResetAngle();
