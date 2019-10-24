@@ -76,20 +76,11 @@ public class ERSUCC_Auto extends LinearOpMode {
 
         waitForStart();
 
-        while (opModeIsActive()) {
-            Color.RGBToHSV((int) (sensorColor.red() * SCALE_FACTOR),
-                    (int) (sensorColor.green() * SCALE_FACTOR),
-                    (int) (sensorColor.blue() * SCALE_FACTOR),
-                    hsvValues);
-
-            if (sensorDistance.getDistance(DistanceUnit.INCH) > 5) {
-                Drive(0, 0.5);
-            }
-
-            if (sensorDistance.getDistance(DistanceUnit.INCH) <= 5) {
-                Stop();
-            }
+        while (sensorDistance.getDistance(DistanceUnit.INCH) > 5) {
+            Drive(0, 0.5);
         }
+
+        Stop();
     }
 
     public void Drive(double forward, double strafe) {
