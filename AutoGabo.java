@@ -53,7 +53,6 @@ public class AutoGabo extends LinearOpMode {
 
     final private double ArmRestPosition = 0;
 
-    final private int DistanceOffset = 0;
     public void runOpMode() //when you press init
     {
         //Init
@@ -99,21 +98,28 @@ public class AutoGabo extends LinearOpMode {
 
         //play
         DriveToBrick();
+        ScanForSkyStone();
+
 
     }
 
     private void ScanForSkyStone() {
         ResetAngle();
-        while (SideCS.alpha() < 50 && !isStopRequested()) {
+        while (SideCS.alpha() > 60 && !isStopRequested()) {
+            telemetry.addData("Alpha", SideCS.alpha());
             Drive(-MinPower, 0, 0);
+            telemetry.update();
         }
         stop();
     }
     private void DriveToBrick() {
+        final double DistanceOffset = 4;
         ResetAngle();
 
-        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 25 + DistanceOffset && !isStopRequested()) {
-            Drive(0, MinPower, 0);
+        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 11 + DistanceOffset && !isStopRequested()) {
+            telemetry.addData("Distance", RightDistanceSensor.getDistance(DistanceUnit.CM));
+            Drive(0, -NormPower, 0);
+            telemetry.update();
         }
         Stop();
     }
@@ -196,7 +202,7 @@ public class AutoGabo extends LinearOpMode {
     private double CheckDirection()
     {
         double correction;
-        double gain = .10; //how sensitive the correction is
+        double gain = .07; //how sensitive the correction is
 
         double angle = GetAngle();  //get the total amount the angle has changed since last reset
 
