@@ -29,7 +29,7 @@ public class AutoGabo extends LinearOpMode {
 
     private DistanceSensor RightDistanceSensor;
 
-    private Servo Arm = null;
+    private Servo DragArm = null;
 
     private BNO055IMU imu; //declare imu
 
@@ -51,7 +51,8 @@ public class AutoGabo extends LinearOpMode {
     final private double NormPower = 0.5; //The normal power to give to motors to drive
     final private double MinPower = 0.15;
 
-    final private double ArmRestPosition = 0;
+    final private double DragArmRestPosition = 0;
+    final private double DragArmDownPosition = 1;
 
     public void runOpMode() //when you press init
     {
@@ -71,9 +72,9 @@ public class AutoGabo extends LinearOpMode {
 
         SideCS = hardwareMap.get(ColorSensor.class, "SideCS");
 
-        Arm = hardwareMap.servo.get("Arm");
-        Arm.setDirection(Servo.Direction.FORWARD);
-        Arm.setPosition(ArmRestPosition);
+        DragArm = hardwareMap.servo.get("drag_arm");
+        DragArm.setDirection(Servo.Direction.FORWARD);
+        DragArm.setPosition(DragArmRestPosition);
 
         RightDistanceSensor = hardwareMap.get(DistanceSensor.class, "RDS");
 
@@ -97,14 +98,24 @@ public class AutoGabo extends LinearOpMode {
         waitForStart(); //waits for the start button
 
         //play
+        ResetAngle();
         DriveToBrick();
         ScanForSkyStone();
+        DragSkyStone();
 
 
     }
 
+    private void DragSkyStone() {
+        DragArm.setPosition(DragArmDownPosition);
+        final double DistanceOffset = 4;
+        while (!isStopRequested() && RightDistanceSensor.getDistance(DistanceUnit.CM) > 50 + DistanceOffset) {
+            Drive(0, NormPower, 0);
+        }
+        Stop();
+    }
+
     private void ScanForSkyStone() {
-        ResetAngle();
         while (SideCS.alpha() > 60 && !isStopRequested()) {
             telemetry.addData("Alpha", SideCS.alpha());
             Drive(-MinPower, 0, 0);
@@ -114,8 +125,6 @@ public class AutoGabo extends LinearOpMode {
     }
     private void DriveToBrick() {
         final double DistanceOffset = 4;
-        ResetAngle();
-
         while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 11 + DistanceOffset && !isStopRequested()) {
             telemetry.addData("Distance", RightDistanceSensor.getDistance(DistanceUnit.CM));
             Drive(0, -NormPower, 0);
