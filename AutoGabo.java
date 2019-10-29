@@ -28,6 +28,7 @@ public class AutoGabo extends LinearOpMode {
     private DcMotor BRM = null;
 
     private DistanceSensor RightDistanceSensor;
+    private DistanceSensor LeftDistanceSensor;
 
     private Servo DragArm = null;
 
@@ -51,8 +52,8 @@ public class AutoGabo extends LinearOpMode {
     final private double NormPower = 0.5; //The normal power to give to motors to drive
     final private double MinPower = 0.15;
 
-    final private double DragArmRestPosition = 0;
-    final private double DragArmDownPosition = 1;
+    final private double DragArmRestPosition = 0.87;
+    final private double DragArmDownPosition = 0.55;
 
     public void runOpMode() //when you press init
     {
@@ -77,6 +78,7 @@ public class AutoGabo extends LinearOpMode {
         DragArm.setPosition(DragArmRestPosition);
 
         RightDistanceSensor = hardwareMap.get(DistanceSensor.class, "RDS");
+        LeftDistanceSensor = hardwareMap.get(DistanceSensor.class, "LDS");
 
         imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
@@ -98,18 +100,19 @@ public class AutoGabo extends LinearOpMode {
         waitForStart(); //waits for the start button
 
         //play
+
         ResetAngle();
         DriveToBrick();
         ScanForSkyStone();
         DragSkyStone();
-
+          DriveToTape();
 
     }
 
     private void DragSkyStone() {
         DragArm.setPosition(DragArmDownPosition);
         final double DistanceOffset = 4;
-        while (!isStopRequested() && RightDistanceSensor.getDistance(DistanceUnit.CM) > 50 + DistanceOffset) {
+        while (!isStopRequested() && LeftDistanceSensor.getDistance(DistanceUnit.CM) > 50 + DistanceOffset) {
             Drive(0, NormPower, 0);
         }
         Stop();
@@ -125,7 +128,7 @@ public class AutoGabo extends LinearOpMode {
     }
     private void DriveToBrick() {
         final double DistanceOffset = 4;
-        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 11 + DistanceOffset && !isStopRequested()) {
+        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 14 + DistanceOffset && !isStopRequested()) {
             telemetry.addData("Distance", RightDistanceSensor.getDistance(DistanceUnit.CM));
             Drive(0, -NormPower, 0);
             telemetry.update();
@@ -211,7 +214,7 @@ public class AutoGabo extends LinearOpMode {
     private double CheckDirection()
     {
         double correction;
-        double gain = .07; //how sensitive the correction is
+        double gain = .05; //how sensitive the correction is
 
         double angle = GetAngle();  //get the total amount the angle has changed since last reset
 
