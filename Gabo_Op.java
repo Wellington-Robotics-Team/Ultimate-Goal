@@ -27,12 +27,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.robotcontroller.internal;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+
+import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+
+import java.util.Locale;
 
 /**
  * This is a tele op mode that will be used during driver control
@@ -40,15 +48,16 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 //Made by Gabo on October 8th, 2019
 
-@TeleOp(name="Gabo Op", group="Iterative Opmode")
-@Disabled
-public class Gabo_Op extends OpMode
-{
+@TeleOp(name = "Gabo Op", group = "Iterative Opmode")
+public class Gabo_Op extends OpMode {
     // Declare motors out here so we can use them globally
     private DcMotor FLM = null; //private class name = null
     private DcMotor FRM = null; //private because it's good coding practice
     private DcMotor BLM = null; //DcMotor because that is what we will be assigning it to
     private DcMotor BRM = null; //BRM because it is the Back Right Motor (can be anything you want but make it readable)
+
+    private BNO055IMU imu; //declare imu
+    Acceleration gravity;
 
     private final double Power = 0.5; //decimal number that won't be changed named Power
 
@@ -59,17 +68,29 @@ public class Gabo_Op extends OpMode
     public void init() {
         telemetry.addData("Status", "Initializing"); //display on the drivers phone that its working
 
-        FLM  = hardwareMap.get(DcMotor.class, "FLM"); //Go into the config and get the device named "FLM" and assign it to FLM
-        FRM  = hardwareMap.get(DcMotor.class, "FRM"); //device name doesn't have to be the same as the variable name
-        BLM  = hardwareMap.get(DcMotor.class, "BLM"); //DcMotor.class because that is what the object is
-        BRM  = hardwareMap.get(DcMotor.class, "BRM");
+        FLM = hardwareMap.get(DcMotor.class, "FLM"); //Go into the config and get the device named "FLM" and assign it to FLM
+        FRM = hardwareMap.get(DcMotor.class, "FRM"); //device name doesn't have to be the same as the variable name
+        BLM = hardwareMap.get(DcMotor.class, "BLM"); //DcMotor.class because that is what the object is
+        BRM = hardwareMap.get(DcMotor.class, "BRM");
 
         //Make it so we don't have to add flip the sign of the power we are setting to half the motors
         FRM.setDirection(DcMotor.Direction.REVERSE); //Run the right side of the robot backwards
         BRM.setDirection(DcMotor.Direction.REVERSE); //the right motors are facing differently than the left handed ones
 
-        telemetry.addData("Status", "Initialized");   // Tell the driver that initialization is complete.
+        imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
+        parameters.mode = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled = false;
+        imu.initialize(parameters); //initalizes the imu
 
+        while (!imu.isGyroCalibrated()) {
+            telemetry.addData("Status", "Calibrating");
+            telemetry.update();
+        }
+        telemetry.addData("Status", "Initialized");   //
+        telemetry.update();
     }
 
     /*
@@ -98,16 +119,23 @@ public class Gabo_Op extends OpMode
 
         //left side you subtract right_stick_x
         double FrontLeftVal = (gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x) * Power; //front subtract left_stick_x
-        double BackLeftVal = (gamepad1.left_stick_y  + gamepad1.left_stick_x - gamepad1.right_stick_x) * Power; //back subtract left_stick_x
+        double BackLeftVal = (gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x) * Power; //back subtract left_stick_x
 
         //right side you add right_stick_x
-        double FrontRightVal =  (gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x) * Power; //front add left_stick_x
+        double FrontRightVal = (gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x) * Power; //front add left_stick_x
         double BackRightVal = (gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x) * Power; //back subtract left_stick_x
 
         FLM.setPower(FrontLeftVal); //set the power to the motor
         FRM.setPower(FrontRightVal);
         BLM.setPower(BackLeftVal);
         BRM.setPower(BackRightVal);
+
+        gravity = imu.getGravity();
+
+        telemetry.addData("xAccel", gravity.xAccel);
+        telemetry.addData("yAccel", gravity.yAccel);
+        telemetry.addData("zAccel", gravity.zAccel);
+
 
         telemetry.update(); //update the telemetry
     }
