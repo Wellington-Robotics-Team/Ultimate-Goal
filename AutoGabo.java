@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.robotcontroller.internal;
 
 import android.graphics.Color;
+import android.media.MediaPlayer;
 
+import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -27,9 +29,11 @@ public class AutoGabo extends LinearOpMode {
     private DcMotor BLM = null;
     private DcMotor BRM = null;
 
+    //declare distance sensors
     private DistanceSensor RightDistanceSensor;
     private DistanceSensor LeftDistanceSensor;
 
+    //declare servos
     private Servo DragArm = null;
 
     private BNO055IMU imu; //declare imu
@@ -50,13 +54,20 @@ public class AutoGabo extends LinearOpMode {
     private final int BlueThreshold = 180; //Anything above this number will be considered blue
 
     final private double NormPower = 0.5; //The normal power to give to motors to drive
-    final private double MinPower = 0.15;
+    final private double MinPower = 0.15; //slowest it should do
 
+    //servo positions for drag arm
     final private double DragArmRestPosition = 0.87;
     final private double DragArmDownPosition = 0.55;
 
+
+    MediaPlayer mediaPlayer = null;
     public void runOpMode() //when you press init
     {
+        mediaPlayer = MediaPlayer.create(hardwareMap.appContext, R.raw.march); //create media player
+
+        mediaPlayer.start(); //play
+
         //Init
         FLM  = hardwareMap.get(DcMotor.class, "FLM"); //get the motors from the config
         FRM  = hardwareMap.get(DcMotor.class, "FRM");
@@ -73,10 +84,12 @@ public class AutoGabo extends LinearOpMode {
 
         SideCS = hardwareMap.get(ColorSensor.class, "SideCS");
 
+        //get drag arm
         DragArm = hardwareMap.servo.get("drag_arm");
         DragArm.setDirection(Servo.Direction.FORWARD);
         DragArm.setPosition(DragArmRestPosition);
 
+        //get distance sensors
         RightDistanceSensor = hardwareMap.get(DistanceSensor.class, "RDS");
         LeftDistanceSensor = hardwareMap.get(DistanceSensor.class, "LDS");
 
@@ -99,7 +112,9 @@ public class AutoGabo extends LinearOpMode {
 
         waitForStart(); //waits for the start button
 
+        mediaPlayer.stop();
         //play
+
 
         ResetAngle();
         DriveToBrick();
@@ -109,28 +124,29 @@ public class AutoGabo extends LinearOpMode {
 
     }
 
-    private void DragSkyStone() {
-        DragArm.setPosition(DragArmDownPosition);
-        final double DistanceOffset = 4;
-        while (!isStopRequested() && LeftDistanceSensor.getDistance(DistanceUnit.CM) > 50 + DistanceOffset) {
-            Drive(0, NormPower, 0);
+    private void DragSkyStone() { //drag it
+        DragArm.setPosition(DragArmDownPosition); //set to down
+        final double DistanceOffset = 4; //distance offset to adjust. calibrate
+        while (!isStopRequested() && LeftDistanceSensor.getDistance(DistanceUnit.CM) > 50 + DistanceOffset) { //while not stopped and the distance is more than 50 centimeters
+            Drive(0, NormPower, 0); //straff
         }
-        Stop();
+        Stop(); //stop moving
     }
 
-    private void ScanForSkyStone() {
-        while (SideCS.alpha() > 60 && !isStopRequested()) {
-            telemetry.addData("Alpha", SideCS.alpha());
-            Drive(-MinPower, 0, 0);
+    private void ScanForSkyStone() { //scan
+        while (SideCS.alpha() > 60 && !isStopRequested()) { //while CS isn't detecting black
+            telemetry.addData("Alpha", SideCS.alpha()); //log
+            Drive(-MinPower, 0, 0); //backup
             telemetry.update();
         }
-        stop();
+        stop(); //stop
     }
-    private void DriveToBrick() {
-        final double DistanceOffset = 4;
-        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 14 + DistanceOffset && !isStopRequested()) {
+
+    private void DriveToBrick() { //go to bricks
+        final double DistanceOffset = 4; //calibrate
+        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 14 + DistanceOffset && !isStopRequested()) { //while more than 14 centimeters
             telemetry.addData("Distance", RightDistanceSensor.getDistance(DistanceUnit.CM));
-            Drive(0, -NormPower, 0);
+            Drive(0, -NormPower, 0); //straff
             telemetry.update();
         }
         Stop();
