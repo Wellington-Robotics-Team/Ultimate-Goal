@@ -10,7 +10,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -34,7 +33,7 @@ public class AutoGabo extends LinearOpMode {
     private DistanceSensor LeftDistanceSensor;
 
     //declare servos
-    private Servo DragArm = null;
+    //private Servo DragArm = null;
 
     private BNO055IMU imu; //declare imu
 
@@ -43,8 +42,8 @@ public class AutoGabo extends LinearOpMode {
     private double globalAngle; //the number of degrees the robot has turned
 
     //declare color sensor
-    private ColorSensor CS = null;
-    private ColorSensor SideCS = null;
+    private ColorSensor FloorCS = null;
+    private ColorSensor RightCS = null;
 
     private final double SCALE_FACTOR = 255; //For color sensor readings (make differences more obvious
 
@@ -60,6 +59,7 @@ public class AutoGabo extends LinearOpMode {
     final private double DragArmRestPosition = 0.87;
     final private double DragArmDownPosition = 0.55;
 
+    double CorrectionSensitivity = .05; //how sensitive the correction is
 
     MediaPlayer mediaPlayer = null;
     public void runOpMode() //when you press init
@@ -77,17 +77,18 @@ public class AutoGabo extends LinearOpMode {
         FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); //if we don't set it they will be in neutral and friction will slow it
         BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         FLM.setDirection(DcMotor.Direction.REVERSE); //reverse the motors
         BLM.setDirection(DcMotor.Direction.REVERSE);
 
-        CS = hardwareMap.get(ColorSensor.class, "CS"); //get color sensor
+        FloorCS = hardwareMap.get(ColorSensor.class, "FloorCS"); //get color sensor
 
-        SideCS = hardwareMap.get(ColorSensor.class, "SideCS");
+        RightCS = hardwareMap.get(ColorSensor.class, "RightCS");
 
         //get drag arm
-        DragArm = hardwareMap.servo.get("drag_arm");
-        DragArm.setDirection(Servo.Direction.FORWARD);
-        DragArm.setPosition(DragArmRestPosition);
+        //DragArm = hardwareMap.servo.get("drag_arm");
+        //DragArm.setDirection(Servo.Direction.FORWARD);
+        //DragArm.setPosition(DragArmRestPosition);
 
         //get distance sensors
         RightDistanceSensor = hardwareMap.get(DistanceSensor.class, "RDS");
@@ -120,56 +121,63 @@ public class AutoGabo extends LinearOpMode {
         DriveToBrick();
         ScanForSkyStone();
         DragSkyStone();
-          DriveToTape();
 
+        Drive(NormPower, 0, 0);
+        sleep(1000);
+
+        DriveToTape();
     }
 
+
     private void DragSkyStone() { //drag it
-        DragArm.setPosition(DragArmDownPosition); //set to down
+        //DragArm.setPosition(DragArmDownPosition); //set to down
         final double DistanceOffset = 4; //distance offset to adjust. calibrate
-        while (!isStopRequested() && LeftDistanceSensor.getDistance(DistanceUnit.CM) > 50 + DistanceOffset) { //while not stopped and the distance is more than 50 centimeters
+        while (!isStopRequested() && LeftDistanceSensor.getDistance(DistanceUnit.CM) > 34 + DistanceOffset) { //while not stopped and the distance is more than 50 centimeters
+            telemetry.addData("Distance", LeftDistanceSensor.getDistance(DistanceUnit.CM));
             Drive(0, NormPower, 0); //straff
+            telemetry.update();
         }
-        Stop(); //stop moving
+        StopRobot(); //stop moving
     }
 
     private void ScanForSkyStone() { //scan
-        while (SideCS.alpha() > 60 && !isStopRequested()) { //while CS isn't detecting black
-            telemetry.addData("Alpha", SideCS.alpha()); //log
+        CorrectionSensitivity = 0.01;
+        while (RightCS.alpha() > 90 && !isStopRequested()) { //while FloorCS isn't detecting black
+            telemetry.addData("Alpha", RightCS.alpha()); //log
             Drive(-MinPower, 0, 0); //backup
             telemetry.update();
         }
-        stop(); //stop
+        StopRobot(); //stop
     }
 
     private void DriveToBrick() { //go to bricks
-        final double DistanceOffset = 4; //calibrate
-        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 14 + DistanceOffset && !isStopRequested()) { //while more than 14 centimeters
+        final double DistanceOffset = 5; //calibrate
+        CorrectionSensitivity = 0.05;
+        while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 15 + DistanceOffset && !isStopRequested()) { //while more than 14 centimeters
             telemetry.addData("Distance", RightDistanceSensor.getDistance(DistanceUnit.CM));
             Drive(0, -NormPower, 0); //straff
             telemetry.update();
         }
-        Stop();
+        StopRobot();
     }
 
     private void DriveToTape() {
-        ResetAngle();
-        CS.enableLed(true); //turn on LED
-        Color.RGBToHSV((int) (CS.red() * SCALE_FACTOR), //get readings before starting
-                (int) (CS.green() * SCALE_FACTOR),
-                (int) (CS.blue() * SCALE_FACTOR),
+        Color.RGBToHSV((int) (FloorCS.red() * SCALE_FACTOR), //get readings before starting
+                (int) (FloorCS.green() * SCALE_FACTOR),
+                (int) (FloorCS.blue() * SCALE_FACTOR),
                 hsvValues);
 
         while (!isStopRequested() && hsvValues[0] > RedThreshold && hsvValues[0] < BlueThreshold) { //run until the driver presses stop or its on red or blue tape
-            Color.RGBToHSV((int) (CS.red() * SCALE_FACTOR), //check readings again
-                    (int) (CS.green() * SCALE_FACTOR),
-                    (int) (CS.blue() * SCALE_FACTOR),
+            Color.RGBToHSV((int) (FloorCS.red() * SCALE_FACTOR), //check readings again
+                    (int) (FloorCS.green() * SCALE_FACTOR),
+                    (int) (FloorCS.blue() * SCALE_FACTOR),
                     hsvValues);
             Drive(NormPower, 0, 0); //drive forward at the normal speed
+            telemetry.addData("Hue", hsvValues[0]);
+            telemetry.update();
         }
         //Driver pressed stop or we are on tape
-        Stop(); //stop the robot
-        CS.enableLed(false); //turn off LED
+        StopRobot(); //stop the robot
     }
 
     public void Drive(double forward, double sideways, double rotation) { //make a function to drive
@@ -177,14 +185,13 @@ public class AutoGabo extends LinearOpMode {
         if (rotation == 0) correction = CheckDirection(); //if there isn't any rotation then use correction
 
         telemetry.addData("Correction", correction);
-        telemetry.update();
         FRM.setPower((forward + sideways + rotation) + correction);
         FLM.setPower((forward - sideways - rotation) - correction);
         BRM.setPower((forward - sideways + rotation) + correction);
         BLM.setPower((forward + sideways - rotation) - correction);
     }
 
-    private void Stop() {  //stop the robot
+    private void StopRobot() {  //stop the robot
         FRM.setPower(0); //set all motors to 0 power
         FLM.setPower(0);
         BRM.setPower(0);
@@ -230,7 +237,6 @@ public class AutoGabo extends LinearOpMode {
     private double CheckDirection()
     {
         double correction;
-        double gain = .05; //how sensitive the correction is
 
         double angle = GetAngle();  //get the total amount the angle has changed since last reset
 
@@ -239,7 +245,7 @@ public class AutoGabo extends LinearOpMode {
         else
             correction = -angle;        // reverse sign of angle for correction.
 
-        correction = correction * gain;
+        correction = correction * CorrectionSensitivity;
 
         return correction;
     }
@@ -298,6 +304,6 @@ public class AutoGabo extends LinearOpMode {
 
 
         // turn the motors off.
-        Stop();
+        StopRobot();
     }
 }
