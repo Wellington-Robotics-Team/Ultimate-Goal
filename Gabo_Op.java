@@ -33,6 +33,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
@@ -56,10 +57,14 @@ public class Gabo_Op extends OpMode {
     private DcMotor BLM = null; //DcMotor because that is what we will be assigning it to
     private DcMotor BRM = null; //BRM because it is the Back Right Motor (can be anything you want but make it readable)
 
-    private BNO055IMU imu; //declare imu
-    Acceleration gravity;
+    //private Servo DragArm = null;
 
-    private final double Power = 0.5; //decimal number that won't be changed named Power
+    final private double DragArmRestPosition = 0.87;
+    final private double DragArmDownPosition = 0.55;
+
+    //private boolean APressed = false;
+
+    private final double Power = 1; //decimal number that won't be changed named Power
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -77,18 +82,15 @@ public class Gabo_Op extends OpMode {
         FRM.setDirection(DcMotor.Direction.REVERSE); //Run the right side of the robot backwards
         BRM.setDirection(DcMotor.Direction.REVERSE); //the right motors are facing differently than the left handed ones
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
-        parameters.mode = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled = false;
-        imu.initialize(parameters); //initalizes the imu
+        FLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        while (!imu.isGyroCalibrated()) {
-            telemetry.addData("Status", "Calibrating");
-            telemetry.update();
-        }
+        // DragArm = hardwareMap.servo.get("drag_arm");
+       // DragArm.setDirection(Servo.Direction.FORWARD);
+       // DragArm.setPosition(DragArmRestPosition);
+
         telemetry.addData("Status", "Initialized");   //
         telemetry.update();
     }
@@ -130,12 +132,17 @@ public class Gabo_Op extends OpMode {
         BLM.setPower(BackLeftVal);
         BRM.setPower(BackRightVal);
 
-        gravity = imu.getGravity();
+        /*if (gamepad1.a) {
+            if (!APressed) {
+                APressed = true;
+                if (DragArm.getPosition() != DragArmRestPosition)
+                    DragArm.setPosition(DragArmRestPosition);
+                else DragArm.setPosition(DragArmDownPosition);
+            }
+        } else if (APressed) APressed = false;
 
-        telemetry.addData("xAccel", gravity.xAccel);
-        telemetry.addData("yAccel", gravity.yAccel);
-        telemetry.addData("zAccel", gravity.zAccel);
-
+        telemetry.addData("Servo Position", DragArm.getPosition());
+*/
 
         telemetry.update(); //update the telemetry
     }
