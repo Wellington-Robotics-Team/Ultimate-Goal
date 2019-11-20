@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.robotcontroller.internal;
 
 import android.graphics.Color;
-import android.media.MediaPlayer;
+//import android.media.MediaPlayer;
 
-import com.qualcomm.ftcrobotcontroller.R;
+//import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -31,6 +31,7 @@ public class AutoGabo extends LinearOpMode {
     //declare distance sensors
     private DistanceSensor RightDistanceSensor;
     private DistanceSensor LeftDistanceSensor;
+    private DistanceSensor FrontDistanceSensor;
 
     //declare servos
     //private Servo DragArm = null;
@@ -45,28 +46,19 @@ public class AutoGabo extends LinearOpMode {
     private ColorSensor FloorCS = null;
     private ColorSensor RightCS = null;
 
-    private final double SCALE_FACTOR = 255; //For color sensor readings (make differences more obvious
-
-    private float hsvValues[] = {0F, 0F, 0F}; //store values
-
-    private final int RedThreshold = 50; //Anything below this number will be considered red
-    private final int BlueThreshold = 180; //Anything above this number will be considered blue
-
-    final private double NormPower = 0.5; //The normal power to give to motors to drive
+    final private double NormPower = 0.50; //The normal power to give to motors to drive
     final private double MinPower = 0.15; //slowest it should do
 
     //servo positions for drag arm
-    final private double DragArmRestPosition = 0.87;
-    final private double DragArmDownPosition = 0.55;
+  //  final private double DragArmRestPosition = 0.87;
+//    final private double DragArmDownPosition = 0.55;
 
-    double CorrectionSensitivity = .05; //how sensitive the correction is
-
-    MediaPlayer mediaPlayer = null;
+    //private MediaPlayer mediaPlayer = null;
     public void runOpMode() //when you press init
     {
-        mediaPlayer = MediaPlayer.create(hardwareMap.appContext, R.raw.march); //create media player
+        //mediaPlayer = MediaPlayer.create(hardwareMap.appContext, R.raw.march); //create media player
 
-        mediaPlayer.start(); //play
+        //mediaPlayer.start(); //play
 
         //Init
         FLM  = hardwareMap.get(DcMotor.class, "FLM"); //get the motors from the config
@@ -82,9 +74,9 @@ public class AutoGabo extends LinearOpMode {
         BLM.setDirection(DcMotor.Direction.REVERSE);
 
         FloorCS = hardwareMap.get(ColorSensor.class, "FloorCS"); //get color sensor
-
+        FloorCS.enableLed(true);
         RightCS = hardwareMap.get(ColorSensor.class, "RightCS");
-
+        RightCS.enableLed(true);
         //get drag arm
         //DragArm = hardwareMap.servo.get("drag_arm");
         //DragArm.setDirection(Servo.Direction.FORWARD);
@@ -93,6 +85,7 @@ public class AutoGabo extends LinearOpMode {
         //get distance sensors
         RightDistanceSensor = hardwareMap.get(DistanceSensor.class, "RDS");
         LeftDistanceSensor = hardwareMap.get(DistanceSensor.class, "LDS");
+        FrontDistanceSensor = hardwareMap.get(DistanceSensor.class, "FDS");
 
         imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
@@ -113,22 +106,102 @@ public class AutoGabo extends LinearOpMode {
 
         waitForStart(); //waits for the start button
 
-        mediaPlayer.stop();
+        //mediaPlayer.stop();
         //play
 
-
+        //Against wall
         ResetAngle();
-        DriveToBrick();
+
+        //Move to bricks
+        RushB(12 + 6, RightDistanceSensor, NormPower);
+        StopRobot();
+        //move to black brick. 12 cm from first brick
         ScanForSkyStone();
-        DragSkyStone();
-
-        Drive(NormPower, 0, 0);
-        sleep(1000);
-
+        StopRobot();
+        //move to left wall. 12 cm from black block
+        RushB(30 + 4, LeftDistanceSensor, NormPower);
+        StopRobot();
+        //drive to other side of field. 30 cm from left wall
+        RushB(17 + 3, FrontDistanceSensor, NormPower);
+        StopRobot();
+        //Drive to plate. 17 cm from front wall, 30 cm to left wall
+        RushB(12 + 6, RightDistanceSensor, NormPower);
+        StopRobot();
+        //Drive to left wall with plate. 12 cm to plate, 17cm from front wall
+        RushB(8 + 1, LeftDistanceSensor, NormPower);
+        StopRobot();
+        //8 cm from left wall, 12cm to plate, 17cm from front wall
+        RushB(13, RightDistanceSensor, MinPower);
+        StopRobot();
+        //drive to tape
         DriveToTape();
+        StopRobot();
+
+        stop();
     }
+    private void GetAwayFromPlane() {
+        while (RightDistanceSensor.getDistance(DistanceUnit.CM) < 20 && !isStopRequested()) {
+            Drive(-MinPower, 0, 0);
+        }
+    }
+/*
+    private void DriveForwardToWall() {
+        final double DistanceOffset = 8; //calibrate
+        telemetry.addData("Distance", FrontDistanceSensor.getDistance(DistanceUnit.CM));
+        telemetry.update();
+        sleep(5000);
+        while (FrontDistanceSensor.getDistance(DistanceUnit.CM) > 20 + DistanceOffset && !isStopRequested()) { //while more than 14 centimeters
+            telemetry.addData("Distance", FrontDistanceSensor.getDistance(DistanceUnit.CM));
+            Drive(NormPower, 0, 0); //straff
+            telemetry.update();
+        }
+        StopRobot();
+    }
+ */
+    /**
+     * Runs until it gets close to wall
+     * slowly gets slower
+     */
+    private void RushB(double endDistance, DistanceSensor TheDistanceSensor, double MaxPower) //moves with distance sensor. Slowly getting slower and slower
+    {
+        final double DistanceOffset = 2;
+        endDistance = endDistance + DistanceOffset;
 
+        double startDistance = TheDistanceSensor.getDistance(DistanceUnit.CM); //gets the distance to the wall
+        double distanceTraveled = 0; //sets the distance traveled to 0
+        double totalNeededToTravel = startDistance - endDistance; //gets the total distance the robot needs to move
+        double lastDistance = startDistance; //last distance is first distance
+        double thingy = totalNeededToTravel * totalNeededToTravel * totalNeededToTravel;
+        double slope = -MaxPower / thingy; //gets the slope of the graph that is needed to make y = 0 when totalNeeded to travel is x
 
+        while (TheDistanceSensor.getDistance(DistanceUnit.CM) > endDistance && !isStopRequested()) //while op mode is running and the distance to the wall is greater than the end distance
+        {
+            telemetry.addData("Status: ", "Rushing A");
+            double currentDistance = TheDistanceSensor.getDistance(DistanceUnit.CM); //gets the current distance to the wall
+            telemetry.addData("Current distance to wall: ", currentDistance);
+
+            double deltaDistance = lastDistance - currentDistance; //change in distance is the last distance - currentDistance
+
+            distanceTraveled += deltaDistance; //adds the change in distance to distance traveled
+            lastDistance = currentDistance; //the last distance is set to the current distance
+            double distanceCubed = distanceTraveled * distanceTraveled * distanceTraveled;
+            double power = (   slope * distanceCubed) + MaxPower; // the power is the x value in that position
+            if (power > MaxPower) power = MaxPower;
+            else if (power < MinPower && power > 0) power = MinPower; //if the power is less than the min power level just set the power to the minpower level
+            else if (power <= 0) power = 0; //if its 0 then set it to 0 of course
+            telemetry.addData("Power", power);
+            if (TheDistanceSensor == FrontDistanceSensor) {
+                Drive(power, 0, 0); //moves the robot forward with whatever the power is
+            } else if (TheDistanceSensor == LeftDistanceSensor) {
+                Drive(0, power, 0);
+            } else if (TheDistanceSensor == RightDistanceSensor) {
+                Drive(0, -power, 0);
+            }
+            telemetry.update();
+        }
+    StopRobot();
+    }
+/*
     private void DragSkyStone() { //drag it
         //DragArm.setPosition(DragArmDownPosition); //set to down
         final double DistanceOffset = 4; //distance offset to adjust. calibrate
@@ -139,20 +212,18 @@ public class AutoGabo extends LinearOpMode {
         }
         StopRobot(); //stop moving
     }
-
+*/
     private void ScanForSkyStone() { //scan
-        CorrectionSensitivity = 0.01;
-        while (RightCS.alpha() > 90 && !isStopRequested()) { //while FloorCS isn't detecting black
+        while (RightCS.alpha() > 70 && !isStopRequested()) { //while FloorCS isn't detecting black
             telemetry.addData("Alpha", RightCS.alpha()); //log
-            Drive(-MinPower, 0, 0); //backup
+            Drive(-NormPower, 0, 0); //backup
             telemetry.update();
         }
         StopRobot(); //stop
     }
-
+/*
     private void DriveToBrick() { //go to bricks
-        final double DistanceOffset = 5; //calibrate
-        CorrectionSensitivity = 0.05;
+        final double DistanceOffset = 8; //calibrate
         while (RightDistanceSensor.getDistance(DistanceUnit.CM) > 15 + DistanceOffset && !isStopRequested()) { //while more than 14 centimeters
             telemetry.addData("Distance", RightDistanceSensor.getDistance(DistanceUnit.CM));
             Drive(0, -NormPower, 0); //straff
@@ -160,8 +231,15 @@ public class AutoGabo extends LinearOpMode {
         }
         StopRobot();
     }
-
+*/
     private void DriveToTape() {
+        final double SCALE_FACTOR = 255; //For color sensor readings (make differences more obvious
+
+        float hsvValues[] = {0F, 0F, 0F}; //store values
+
+        final int RedThreshold = 50; //Anything below this number will be considered red
+        final int BlueThreshold = 180; //Anything above this number will be considered blue
+
         Color.RGBToHSV((int) (FloorCS.red() * SCALE_FACTOR), //get readings before starting
                 (int) (FloorCS.green() * SCALE_FACTOR),
                 (int) (FloorCS.blue() * SCALE_FACTOR),
@@ -172,17 +250,24 @@ public class AutoGabo extends LinearOpMode {
                     (int) (FloorCS.green() * SCALE_FACTOR),
                     (int) (FloorCS.blue() * SCALE_FACTOR),
                     hsvValues);
-            Drive(NormPower, 0, 0); //drive forward at the normal speed
+
+                Drive(-NormPower, 0, 0); //drive forward at the normal speed
+
             telemetry.addData("Hue", hsvValues[0]);
             telemetry.update();
         }
         //Driver pressed stop or we are on tape
-        StopRobot(); //stop the robot
     }
 
     public void Drive(double forward, double sideways, double rotation) { //make a function to drive
-        double correction = 0; //default 0
-        if (rotation == 0) correction = CheckDirection(); //if there isn't any rotation then use correction
+        double correction = 0; //default correction
+        if (rotation == 0) {
+            if (forward != 0) {
+                correction = CheckDirection(Math.abs(forward)); //if there isn't any rotation then use correction
+            } else if (sideways != 0) {
+                correction = CheckDirection(Math.abs(sideways)); //if there isn't any rotation then use correction
+            }
+        }
 
         telemetry.addData("Correction", correction);
         FRM.setPower((forward + sideways + rotation) + correction);
@@ -234,8 +319,7 @@ public class AutoGabo extends LinearOpMode {
      * See if we are moving in a straight line and if not return a power correction value.
      * @return Power adjustment, + is adjust left - is adjust right.
      */
-    private double CheckDirection()
-    {
+    private double CheckDirection(double Speed) {
         double correction;
 
         double angle = GetAngle();  //get the total amount the angle has changed since last reset
@@ -245,65 +329,10 @@ public class AutoGabo extends LinearOpMode {
         else
             correction = -angle;        // reverse sign of angle for correction.
 
+        double CorrectionSensitivity = 0.10 * Speed;
+
         correction = correction * CorrectionSensitivity;
 
         return correction;
-    }
-    /**
-     * Rotate left or right the number of degrees. Does not support turning more than 180 degrees.
-     *
-     * @param degrees Degrees to turn, + is left - is right
-     */
-    private void Rotate(int degrees, double power) {
-        telemetry.addData("Rotating", true); //informs
-        telemetry.update();
-
-        ResetAngle(); //sets starting angle and resets the amount turned to 0
-
-        // GetAngle() returns + when rotating counter clockwise (left) and - when rotating clockwise (right).
-        double DegreesCubed = degrees * degrees * degrees;
-        double slope = -power / DegreesCubed; //gets the slope of the graph that is needed to make y = 0 when totalNeeded to travel is x
-
-        // rotate until turn is completed.
-        if (degrees < 0) {
-            // On right turn we have to get off zero first.
-            while (!isStopRequested() && GetAngle() == 0) {
-                double currentAngle = GetAngle();
-                double currentAngleCubed = currentAngle * currentAngle * currentAngle;
-                double newPower = slope * currentAngleCubed + power; // the power is the x value in that position
-                if (newPower < MinPower) newPower = MinPower;
-                if (newPower <= 0) newPower = 0;
-                telemetry.addData("Power: ", newPower);
-                telemetry.update();
-                Drive(0, 0, newPower);
-            }
-
-            while (!isStopRequested() && GetAngle() > degrees) {
-                double currentAngle = GetAngle();
-                double CurrentAngledCubed = currentAngle * currentAngle * currentAngle;
-                double newPower = slope * CurrentAngledCubed + power; // the power is the x value in that position
-                if (newPower < MinPower) newPower = MinPower;
-                if (newPower <= 0) newPower = 0;
-                telemetry.addData("Power: ", newPower);
-                telemetry.update();
-                Drive(0, 0, newPower);
-            } //once it starts turning slightly more than it should.
-        } else {
-            // left turn.
-            while (!isStopRequested() && GetAngle() < degrees) {
-                double currentAngle = GetAngle();
-                double CurrentAngleCubed = currentAngle * currentAngle * currentAngle;
-                double newPower = slope * CurrentAngleCubed + power; // the power is the x value in that position
-                if (newPower < MinPower) newPower = MinPower;
-                if (newPower <= 0) newPower = 0;
-                telemetry.addData("Power: ", -newPower);
-                telemetry.update();
-                Drive(0,0 ,-newPower);
-            }
-        }
-
-
-        // turn the motors off.
-        StopRobot();
     }
 }
