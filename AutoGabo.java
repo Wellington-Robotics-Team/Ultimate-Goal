@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.sun.tools.javac.util.ForwardingDiagnosticFormatter;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -22,6 +23,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 @Autonomous(name = "AutoGabo", group = "Auto")
 public class AutoGabo extends LinearOpMode {
 
+    enum Directions {
+        Right,
+        Left,
+        Forward,
+        Back
+    }
     //declare motors
     private DcMotor FLM = null;
     private DcMotor FRM = null;
@@ -113,25 +120,25 @@ public class AutoGabo extends LinearOpMode {
         ResetAngle();
 
         //Move to bricks
-        RushB(12 + 6, RightDistanceSensor, NormPower);
+        RushB(12 + 6, Directions.Right, NormPower);
         StopRobot();
         //move to black brick. 12 cm from first brick
         ScanForSkyStone();
         StopRobot();
         //move to left wall. 12 cm from black block
-        RushB(30 + 4, LeftDistanceSensor, NormPower);
+        RushB(30 + 4, Directions.Left, NormPower);
         StopRobot();
         //drive to other side of field. 30 cm from left wall
-        RushB(17 + 3, FrontDistanceSensor, NormPower);
+        RushB(31 + 3, Directions.Forward, NormPower);
         StopRobot();
         //Drive to plate. 17 cm from front wall, 30 cm to left wall
-        RushB(12 + 6, RightDistanceSensor, NormPower);
+        RushB(12 + 6, Directions.Right, NormPower);
         StopRobot();
         //Drive to left wall with plate. 12 cm to plate, 17cm from front wall
-        RushB(8 + 1, LeftDistanceSensor, NormPower);
+        RushB(8 + 1, Directions.Left, NormPower);
         StopRobot();
         //8 cm from left wall, 12cm to plate, 17cm from front wall
-        RushB(13, RightDistanceSensor, MinPower);
+        RushB(13, Directions.Right, MinPower);
         StopRobot();
         //drive to tape
         DriveToTape();
@@ -139,12 +146,13 @@ public class AutoGabo extends LinearOpMode {
 
         stop();
     }
+    /*
     private void GetAwayFromPlane() {
         while (RightDistanceSensor.getDistance(DistanceUnit.CM) < 20 && !isStopRequested()) {
             Drive(-MinPower, 0, 0);
         }
     }
-/*
+
     private void DriveForwardToWall() {
         final double DistanceOffset = 8; //calibrate
         telemetry.addData("Distance", FrontDistanceSensor.getDistance(DistanceUnit.CM));
@@ -162,10 +170,29 @@ public class AutoGabo extends LinearOpMode {
      * Runs until it gets close to wall
      * slowly gets slower
      */
-    private void RushB(double endDistance, DistanceSensor TheDistanceSensor, double MaxPower) //moves with distance sensor. Slowly getting slower and slower
+    private void RushB(double endDistance, Directions Direction, double MaxPower) //moves with distance sensor. Slowly getting slower and slower
     {
         final double DistanceOffset = 2;
         endDistance = endDistance + DistanceOffset;
+
+        DistanceSensor TheDistanceSensor = null;
+
+        switch (Direction) {
+            case Right:
+                TheDistanceSensor = RightDistanceSensor;
+                break;
+            case Left:
+                TheDistanceSensor = LeftDistanceSensor;
+                break;
+            case Forward:
+                TheDistanceSensor = FrontDistanceSensor;
+                break;
+        }
+
+        if (TheDistanceSensor == null) {
+            stop();
+            return;
+        }
 
         double startDistance = TheDistanceSensor.getDistance(DistanceUnit.CM); //gets the distance to the wall
         double distanceTraveled = 0; //sets the distance traveled to 0
@@ -190,16 +217,22 @@ public class AutoGabo extends LinearOpMode {
             else if (power < MinPower && power > 0) power = MinPower; //if the power is less than the min power level just set the power to the minpower level
             else if (power <= 0) power = 0; //if its 0 then set it to 0 of course
             telemetry.addData("Power", power);
-            if (TheDistanceSensor == FrontDistanceSensor) {
-                Drive(power, 0, 0); //moves the robot forward with whatever the power is
-            } else if (TheDistanceSensor == LeftDistanceSensor) {
-                Drive(0, power, 0);
-            } else if (TheDistanceSensor == RightDistanceSensor) {
-                Drive(0, -power, 0);
+            switch (Direction) {
+                case Right:
+                    telemetry.addData("Direction", "Right");
+                    Drive(0, -power, 0);
+                    break;
+                case Left:
+                    telemetry.addData("Direction", "Left");
+                    Drive(0, power, 0);
+                    break;
+                case Forward:
+                    telemetry.addData("Direction", "Forward");
+                    Drive(power, 0, 0); //moves the robot forward with whatever the power is
+                    break;
             }
             telemetry.update();
         }
-    StopRobot();
     }
 /*
     private void DragSkyStone() { //drag it
@@ -219,7 +252,6 @@ public class AutoGabo extends LinearOpMode {
             Drive(-NormPower, 0, 0); //backup
             telemetry.update();
         }
-        StopRobot(); //stop
     }
 /*
     private void DriveToBrick() { //go to bricks
@@ -238,7 +270,7 @@ public class AutoGabo extends LinearOpMode {
         float hsvValues[] = {0F, 0F, 0F}; //store values
 
         final int RedThreshold = 50; //Anything below this number will be considered red
-        final int BlueThreshold = 180; //Anything above this number will be considered blue
+        final int BlueThreshold = 170; //Anything above this number will be considered blue
 
         Color.RGBToHSV((int) (FloorCS.red() * SCALE_FACTOR), //get readings before starting
                 (int) (FloorCS.green() * SCALE_FACTOR),
