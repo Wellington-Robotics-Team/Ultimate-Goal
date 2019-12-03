@@ -49,22 +49,28 @@ import java.util.Locale;
 
 //Made by Gabo on October 8th, 2019
 
-@TeleOp(name = "Gabo Op", group = "Iterative Opmode")
+@TeleOp(name = "TeleGabo", group = "Iterative Opmode")
 public class Gabo_Op extends OpMode {
     // Declare motors out here so we can use them globally
     private DcMotor FLM = null; //private class name = null
     private DcMotor FRM = null; //private because it's good coding practice
     private DcMotor BLM = null; //DcMotor because that is what we will be assigning it to
     private DcMotor BRM = null; //BRM because it is the Back Right Motor (can be anything you want but make it readable)
+    private DcMotor Suck = null;
 
     //private Servo DragArm = null;
 
-    final private double DragArmRestPosition = 0.87;
-    final private double DragArmDownPosition = 0.55;
+    //final private double DragArmRestPosition = 0.1;
+    //final private double DragArmDownPosition = 0.6;
+    final private double SuckPower = 0.333;
 
     //private boolean APressed = false;
+    //private boolean LeftBumperPressed = false;
+    //private boolean RightBumperPressed = false;
+    private boolean BPressed = false;
 
-    private final double Power = 1; //decimal number that won't be changed named Power
+    //private double DragArmPosition = 0;
+    private final double Power = 0.5; //decimal number that won't be changed named Power
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -78,20 +84,24 @@ public class Gabo_Op extends OpMode {
         BLM = hardwareMap.get(DcMotor.class, "BLM"); //DcMotor.class because that is what the object is
         BRM = hardwareMap.get(DcMotor.class, "BRM");
 
+        Suck = hardwareMap.get(DcMotor.class, "SUCK");
+
         //Make it so we don't have to add flip the sign of the power we are setting to half the motors
         FRM.setDirection(DcMotor.Direction.REVERSE); //Run the right side of the robot backwards
         BRM.setDirection(DcMotor.Direction.REVERSE); //the right motors are facing differently than the left handed ones
 
-        FLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        FLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-        // DragArm = hardwareMap.servo.get("drag_arm");
-       // DragArm.setDirection(Servo.Direction.FORWARD);
-       // DragArm.setPosition(DragArmRestPosition);
+         //DragArm = hardwareMap.servo.get("drag_arm");
+         //DragArm.setDirection(Servo.Direction.REVERSE
+         //);
+         //DragArm.setPosition(DragArmPosition);
 
-        telemetry.addData("Status", "Initialized");   //
+
+         telemetry.addData("Status", "Initialized");   //
         telemetry.update();
     }
 
@@ -132,7 +142,8 @@ public class Gabo_Op extends OpMode {
         BLM.setPower(BackLeftVal);
         BRM.setPower(BackRightVal);
 
-        /*if (gamepad1.a) {
+/*
+        if (gamepad1.a) {
             if (!APressed) {
                 APressed = true;
                 if (DragArm.getPosition() != DragArmRestPosition)
@@ -140,10 +151,38 @@ public class Gabo_Op extends OpMode {
                 else DragArm.setPosition(DragArmDownPosition);
             }
         } else if (APressed) APressed = false;
-
-        telemetry.addData("Servo Position", DragArm.getPosition());
 */
+        if (gamepad1.b) {
+            if (!BPressed) {
+                BPressed = true;
+                if (Suck.getPower() == SuckPower) {
+                    Suck.setPower(0);
+                } else {
+                    Suck.setPower(SuckPower);
+                }
+            }
+        } else if (BPressed) BPressed = false;
 
+        /*
+        if (gamepad1.left_bumper) {
+            if (!LeftBumperPressed) {
+                LeftBumperPressed = true;
+                DragArmPosition -= 0.1;
+            }
+        } else if (LeftBumperPressed) LeftBumperPressed = false;
+
+        if (gamepad1.right_bumper) {
+            if (!RightBumperPressed) {
+                RightBumperPressed = true;
+                DragArmPosition += 0.1;
+            }
+        } else if (RightBumperPressed) RightBumperPressed = false;
+
+
+        DragArm.setPosition(DragArmPosition);
+        telemetry.addData("Servo Position", DragArm.getPosition());
+        telemetry.addData("Servo Position Variable", DragArmPosition);
+*/
         telemetry.update(); //update the telemetry
     }
 
