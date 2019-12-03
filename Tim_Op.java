@@ -47,7 +47,7 @@ public class Tim_Op extends OpMode {
     private DcMotor MM = null; //private because it's good coding practice
     private DcMotor RM = null; //DcMotor because that is what we will be assigning it to
 
-    private final double Power = 1; //decimal number that won't be changed named Power
+    private final double Power = 0.75; //decimal number that won't be changed named Power
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -103,7 +103,7 @@ public class Tim_Op extends OpMode {
         LM.setPower(LeftPower * Power); //set the power to the motor
         RM.setPower(RightPower * Power);
 
-        MM.setPower(gamepad1.right_stick_x * Power);
+        MM.setPower(-gamepad1.right_stick_x);
 
 
         telemetry.update(); //update the telemetry
