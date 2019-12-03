@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.robotcontroller.internal;
 
+import android.drm.DrmStore;
 import android.graphics.Color;
 //import android.media.MediaPlayer;
 
@@ -10,7 +11,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.sun.tools.javac.util.ForwardingDiagnosticFormatter;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -57,16 +57,12 @@ public class AutoGabo extends LinearOpMode {
     final private double MinPower = 0.15; //slowest it should do
 
     //servo positions for drag arm
-  //  final private double DragArmRestPosition = 0.87;
-//    final private double DragArmDownPosition = 0.55;
+    //final private double DragArmDownPosition = 0.55;
 
+    //final private double DragArmRestPosition = 0.87;
     //private MediaPlayer mediaPlayer = null;
     public void runOpMode() //when you press init
     {
-        //mediaPlayer = MediaPlayer.create(hardwareMap.appContext, R.raw.march); //create media player
-
-        //mediaPlayer.start(); //play
-
         //Init
         FLM  = hardwareMap.get(DcMotor.class, "FLM"); //get the motors from the config
         FRM  = hardwareMap.get(DcMotor.class, "FRM");
@@ -76,7 +72,6 @@ public class AutoGabo extends LinearOpMode {
         FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); //if we don't set it they will be in neutral and friction will slow it
         BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
         FLM.setDirection(DcMotor.Direction.REVERSE); //reverse the motors
         BLM.setDirection(DcMotor.Direction.REVERSE);
 
