@@ -20,8 +20,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 //This auto was made by Gabo Gang on Oct 15 2019
 
-@Autonomous(name = "AutoGabo", group = "Auto")
-public class AutoGabo extends LinearOpMode {
+@Autonomous(name = "Bl-Block and Plate and Park", group = "Bl")
+public class BL_Block_And_Plate_And_Park extends LinearOpMode {
 
     enum Directions {
         Right,
