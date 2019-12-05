@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
 /**
  * This is a tele op mode that will be used during driver control
@@ -47,7 +48,18 @@ public class Tim_Op extends OpMode {
     private DcMotor MM = null; //private because it's good coding practice
     private DcMotor RM = null; //DcMotor because that is what we will be assigning it to
 
+    private Servo Swingy = null;
+
     private final double Power = 0.75; //decimal number that won't be changed named Power
+
+    private double ServoPosition = 0;
+
+    private double ServoSpeed = 0.1;
+
+    private boolean LeftBumperPressed = false;
+    private boolean RightBumperPressed = false;
+    private boolean BPressed = false;
+    private boolean XPressed = false;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -67,6 +79,8 @@ public class Tim_Op extends OpMode {
         LM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         RM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         MM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        Swingy = hardwareMap.get(Servo.class, "Swingy");
 
         telemetry.addData("Status", "Initialized");   //
         telemetry.update();
@@ -105,7 +119,39 @@ public class Tim_Op extends OpMode {
 
         MM.setPower(-gamepad1.right_stick_x);
 
+        if (gamepad1.b) {
+            if (!BPressed) {
+                BPressed = true;
+                ServoSpeed += 0.1;
+                if (ServoSpeed > 1) ServoSpeed = 1;
+            }
+        } else if (BPressed) BPressed = false;
 
+        if (gamepad1.x) {
+            if (!XPressed) {
+                XPressed = true;
+                ServoSpeed -= 0.1;
+                if (ServoSpeed < 0) ServoSpeed = 0;
+            }
+        } else if (XPressed) XPressed = false;
+
+        if (gamepad1.left_bumper) {
+            if (!LeftBumperPressed) {
+                LeftBumperPressed = true;
+                ServoPosition -= ServoSpeed;
+                if (ServoPosition < 0) ServoPosition = 0;
+            }
+        } else if (LeftBumperPressed) LeftBumperPressed = false;
+
+        if (gamepad1.right_bumper) {
+            if (!RightBumperPressed) {
+                RightBumperPressed = true;
+                ServoPosition += ServoSpeed;
+                if (ServoPosition > 1) ServoPosition = 1;
+            }
+        } else if (RightBumperPressed) RightBumperPressed = false;
+
+        Swingy.setPosition(ServoPosition);
         telemetry.update(); //update the telemetry
     }
 
