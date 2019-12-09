@@ -53,7 +53,8 @@ import java.util.Locale;
  * Gamepad 1:
  * Left stick: Drive
  * Right Stick: rotate
- * B: On/off Grabby things
+ * B: On/off SUCK
+ * Y: Drop/raise drop arm
  */
 
 /**
@@ -79,21 +80,25 @@ public class Gabo_Op extends OpMode {
     private Servo DragArm = null;
     private Servo LiftGrab = null;
     private Servo LiftSwivel = null;
+    private Servo PushBlock = null;
 
     final private double DragArmRestPosition = 0.1;
-    final private double DragArmDownPosition = 0.6;
+    final private double DragArmUpPosition = 0.23;
+    final private double DragArmDownPosition = 0.55;
     final private double LiftGrabRestPosition = 0;
-    final private double LiftGrabGrabPosition = 0;
-    final private double LiftSwivelRestPosition = 0;
+    final private double LiftGrabGrabPosition = 0.3;
+    final private double LiftSwivelRestPosition = 1;
     final private double LiftSwivelOutPosition = 0;
+    final private double PushBlockRestPosition = 0;
+    final private double PushBlockPushPosition = 0;
     final private double SuckPower = 0.333;
     final private double LiftPower = 1;
     final private int Position0Ticks = 0;
-    final private int Position1Ticks = 2;
-    final private int Position2Ticks = 4;
-    final private int Position3Ticks = 6;
-    final private int Position4Ticks = 8;
-    final private int Position5Ticks = 10;
+    final private int Position1Ticks = 0;
+    final private int Position2Ticks = 6426;
+    final private int Position3Ticks = 14364;
+    final private int Position4Ticks = 22302;
+    final private int Position5Ticks = 28350;
 
 
     private boolean LeftTrigger2 = false;
@@ -104,6 +109,7 @@ public class Gabo_Op extends OpMode {
     private boolean YPressed2 = false;
     private boolean XPressed2 = false;
     private boolean BPressed1 = false;
+    private boolean YPressed1 = false;
 
     private final double Power = 0.5; //decimal number that won't be changed named Power
 
@@ -123,16 +129,15 @@ public class Gabo_Op extends OpMode {
 
         Lift = hardwareMap.get(DcMotor.class, "LIFT");
         Lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         //Make it so we don't have to add flip the sign of the power we are setting to half the motors
         //FRM.setDirection(DcMotor.Direction.REVERSE); //Run the right side of the robot backwards
         FLM.setDirection(DcMotor.Direction.REVERSE);
         BRM.setDirection(DcMotor.Direction.REVERSE); //the right motors are facing differently than the left handed ones
 
-        FLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        FLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         DragArm = hardwareMap.servo.get("drag_arm");
         DragArm.setDirection(Servo.Direction.REVERSE);
@@ -142,6 +147,7 @@ public class Gabo_Op extends OpMode {
 
         LiftSwivel = hardwareMap.servo.get("SWIVEL");
 
+        PushBlock = hardwareMap.servo.get("PUSH");
 
         telemetry.addData("Status", "Initialized");   //
         telemetry.update();
@@ -168,6 +174,17 @@ public class Gabo_Op extends OpMode {
         FRM.setPower(FrontRightVal);
         BLM.setPower(BackLeftVal);
         BRM.setPower(BackRightVal);
+
+        if (gamepad1.y) {
+            if (!YPressed1) {
+                YPressed1 = true;
+                if (DragArm.getPosition() < DragArmDownPosition) {
+                    DragArm.setPosition(DragArmDownPosition);
+                } else {
+                    DragArm.setPosition(DragArmUpPosition);
+                }
+            }
+        } else if (YPressed1) YPressed1 = false;
 
         if (gamepad2.right_bumper) {
             if (!RightBumperPressed2) {
@@ -245,27 +262,32 @@ public class Gabo_Op extends OpMode {
      */
     @Override
     public void stop() {
-        FLM.setPower(0);
-        FRM.setPower(0);
-        BLM.setPower(0);
-        BRM.setPower(0);
-        Suck.setPower(0);
-        Lift.setPower(0);
-        DragArm.setPosition(DragArmRestPosition);
-        LiftGrab.setPosition(LiftGrabRestPosition);
-        LiftSwivel.setPosition(LiftSwivelRestPosition);
+        if (FLM != null) FLM.setPower(0);
+        if (FRM != null) FRM.setPower(0);
+        if (BLM != null) BLM.setPower(0);
+        if (BRM != null) BRM.setPower(0);
+        if (Suck != null) Suck.setPower(0);
+        if (Lift != null) Lift.setPower(0);
+        if (DragArm != null) DragArm.setPosition(DragArmRestPosition);
+        if (LiftGrab != null) LiftGrab.setPosition(LiftGrabRestPosition);
+        if (LiftSwivel != null) LiftSwivel.setPosition(LiftSwivelRestPosition);
+        if (PushBlock != null) PushBlock.setPosition(PushBlockRestPosition);
     }
 
     private void SetLiftPosition(int TargetPosition) {
         DragArm.setPosition(DragArmDownPosition);
+
         if (LiftSwivel.getPosition() != LiftSwivelOutPosition) {
             Lift.setTargetPosition(Position5Ticks);
+            Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             while (Lift.isBusy()) {
                 Lift.setPower(LiftPower);
             }
             LiftSwivel.setPosition(LiftSwivelOutPosition);
         }
         Lift.setTargetPosition(TargetPosition);
+        Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
         if (Lift.getCurrentPosition() < TargetPosition) {
             if (TargetPosition == Position0Ticks) LiftSwivel.setPosition(LiftSwivelRestPosition);
             while (Lift.isBusy()) {
