@@ -5,8 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 //This auto was made by Gabo Gang on Oct 15 2019
 
-@Autonomous(name = "Bl-Plate and Park", group = "Bl")
-public class Bl_Plate_And_Park extends LinearOpMode {
+@Autonomous(name = "Bl-Wait and Park", group = "Bl")
+public class BL_Wait_And_Park extends LinearOpMode {
     public class JankBot extends Robot {
         @Override
         public boolean AllowedToMove() {
@@ -45,20 +45,11 @@ public class Bl_Plate_And_Park extends LinearOpMode {
 
         waitForStart(); //waits for the start button
 
-        //Drive to plate. 17 cm from front wall, 30 cm to left wall
-        Bot.RushB(Bot.MoveToPlate);
+        //Move to bricks
+        Bot.RushB(Bot.MoveToBricks);
         Bot.StopRobot();
 
-        Bot.DropArm();
-        //Drive to left wall with plate. 12 cm to plate, 17cm from front wall
-        Bot.RushB(Bot.MoveToWallWithPlate);
-        Bot.StopRobot();
-
-        Bot.RaiseArm();
-
-        //drive to tape
-
-        Bot.DriveToTape(Bot.DirectionToTape);
+        Bot.DriveToTape(Bot.DirectionToTape.InverseDirection());
         Bot.StopRobot();
 
         stop();
