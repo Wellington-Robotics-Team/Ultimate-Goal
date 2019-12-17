@@ -44,6 +44,7 @@ import com.qualcomm.robotcore.hardware.Servo;
  * Left stick: Drive
  * Right Stick: rotate
  * B: On/off SUCK
+ * X: On/off SUCK REVERSED
  * Y: Drop/raise drop arm
  */
 
@@ -70,18 +71,17 @@ public class Gabo_Op extends OpMode {
     private Servo DragArm = null;
     private Servo LiftGrab = null;
     private Servo LiftSwivel = null;
-    private Servo PushBlock = null;
 
     final private double DragArmRestPosition = 0.15;
     final private double DragArmDownPosition = 0.7;
-    final private double LiftGrabRestPosition = 0;
-    final private double LiftGrabGrabPosition = 0.3;
+    final private double LiftGrabRestPosition = 0.4;
+    final private double LiftGrabGrabPosition = 0.02;
     final private double LiftSwivelRestPosition = 1;
     final private double LiftSwivelOutPosition = 0;
-    final private double PushBlockRestPosition = 0;
-    final private double PushBlockPushPosition = 0;
+
     final private double SuckPower = 0.333;
     final private double LiftPower = 1;
+
     final private int Position0Ticks = 0;
     final private int Position1Ticks = 0;
     final private int Position2Ticks = 6426;
@@ -91,6 +91,7 @@ public class Gabo_Op extends OpMode {
 
 
     private boolean LeftTrigger2 = false;
+    private boolean RightTrigger2 = false;
     private boolean LeftBumperPressed2 = false;
     private boolean RightBumperPressed2 = false;
     private boolean APressed2 = false;
@@ -99,6 +100,7 @@ public class Gabo_Op extends OpMode {
     private boolean XPressed2 = false;
     private boolean BPressed1 = false;
     private boolean YPressed1 = false;
+    private boolean XPressed1 = false;
 
     private final double Power = 0.5; //decimal number that won't be changed named Power
 
@@ -133,10 +135,10 @@ public class Gabo_Op extends OpMode {
         DragArm.setPosition(DragArmRestPosition);
 
         LiftGrab = hardwareMap.servo.get("GRAB");
+        LiftGrab.setPosition(LiftGrabRestPosition);
 
         LiftSwivel = hardwareMap.servo.get("SWIVEL");
-
-        PushBlock = hardwareMap.servo.get("PUSH");
+        LiftSwivel.setPosition(LiftSwivelRestPosition);
 
         telemetry.addData("Status", "Initialized");   //
         telemetry.update();
@@ -185,24 +187,41 @@ public class Gabo_Op extends OpMode {
             SetLiftPosition(Position3Ticks);
         } else if (gamepad2.x) {
             SetLiftPosition(Position4Ticks);
-        } else if (gamepad2.left_trigger == 1) {
+        } else if (gamepad2.left_bumper) {
             if (Lift.getCurrentPosition() >= Position1Ticks) {
-                SetLiftPosition(Lift.getCurrentPosition() - 1);
+                SetLiftPosition(Lift.getCurrentPosition() - 756);
             } else {
                 SetLiftPosition(Position0Ticks);
+            }
+        } else if (gamepad2.right_bumper) {
+            if (Lift.getCurrentPosition() < Position5Ticks) {
+                SetLiftPosition(Lift.getCurrentPosition() + 756);
+            } else {
+                SetLiftPosition(Position5Ticks);
             }
         } else {
             Lift.setPower(0);
         }
 
-        if (gamepad2.left_bumper) {
-            if (!LeftBumperPressed2) {
-                LeftBumperPressed2 = true;
+        if (gamepad2.left_trigger == 1) {
+            if (!LeftTrigger2) {
+                LeftTrigger2= true;
                 if (LiftGrab.getPosition() != LiftGrabRestPosition)
                     LiftGrab.setPosition(LiftGrabRestPosition);
                 else LiftGrab.setPosition(LiftGrabGrabPosition);
             }
-        } else if (LeftBumperPressed2) LeftBumperPressed2 = false;
+        } else if (LeftTrigger2) LeftTrigger2= false;
+
+        if (gamepad2.right_trigger == 1) {
+            if (!RightTrigger2) {
+                RightTrigger2 = true;
+                if (Lift.getCurrentPosition() > Position2Ticks) {
+                    if (LiftSwivel.getPosition() != LiftSwivelRestPosition)
+                        LiftSwivel.setPosition(LiftSwivelRestPosition);
+                    else LiftSwivel.setPosition(LiftSwivelOutPosition);
+                }
+            }
+        } else if (RightTrigger2) RightTrigger2 = false;
 
         if (gamepad1.b) {
             if (!BPressed1) {
@@ -214,6 +233,17 @@ public class Gabo_Op extends OpMode {
                 }
             }
         } else if (BPressed1) BPressed1 = false;
+
+        if (gamepad1.x) {
+            if (!XPressed1) {
+                XPressed1 = true;
+                if (Suck.getPower() == -SuckPower) {
+                    Suck.setPower(0);
+                } else {
+                    Suck.setPower(-SuckPower);
+                }
+            }
+        } else if (XPressed1) XPressed1 = false;
 
 
         telemetry.addData("Servo Position", DragArm.getPosition());
@@ -234,7 +264,6 @@ public class Gabo_Op extends OpMode {
         if (DragArm != null) DragArm.setPosition(DragArmRestPosition);
         if (LiftGrab != null) LiftGrab.setPosition(LiftGrabRestPosition);
         if (LiftSwivel != null) LiftSwivel.setPosition(LiftSwivelRestPosition);
-        if (PushBlock != null) PushBlock.setPosition(PushBlockRestPosition);
     }
 
 
@@ -245,11 +274,5 @@ public class Gabo_Op extends OpMode {
         Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         Lift.setPower(LiftPower);
-
-        if (LiftSwivel.getPosition() != LiftSwivelOutPosition) {
-            if (Lift.getCurrentPosition() >= Position4Ticks) {
-                LiftSwivel.setPosition(LiftSwivelOutPosition);
-            }
-        }
     }
 }
