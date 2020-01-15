@@ -2,13 +2,21 @@
 
 Gamepad 1	
 Y (single tap)	Drop Drag Arm
+
 Y (double tap)	Lift Drag Arm
+
 Left Stick Y	Drive Forward and Backwards
+
 Left Stick X	Strafe Left and Right
+
 Right Stick X	Changing Heading Right and Left
+
 B (single tap)	Suck in
+
 B (double tap)	Suck off
+
 X (single tap)	Suck out
+
 X (double tap)	Suck off
 
 Gamepad 2	
