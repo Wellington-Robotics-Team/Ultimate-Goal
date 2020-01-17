@@ -46,9 +46,8 @@ import java.lang.annotation.Target;
 public class EncoderTest extends OpMode {
     private DcMotor Lift = null;
 
-    private int TargetPosition = 0;
-    private boolean LeftBumperPressed = false;
-    private boolean RightBumperPressed = false;
+    final private double LiftPower = 1;
+    private int LiftPosition = 0;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -71,33 +70,18 @@ public class EncoderTest extends OpMode {
     public void loop() {
         telemetry.addData("Status", "Running"); //inform the driver
 
-        if (gamepad1.left_bumper) {
-            if (!LeftBumperPressed) {
-                LeftBumperPressed = true;
-                TargetPosition -= 756;
-            }
-        } else if (LeftBumperPressed) LeftBumperPressed = false;
-
         if (gamepad1.right_bumper) {
-            if (!RightBumperPressed) {
-                RightBumperPressed = true;
-                TargetPosition += 756;
-            }
-        } else if (RightBumperPressed) RightBumperPressed = false;
-
-        Lift.setTargetPosition(TargetPosition);
-        Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Lift.setPower(0.5);
-
-        while (Lift.isBusy()) {
-            telemetry.addData("Lift Encoder Position", Lift.getCurrentPosition());
-            telemetry.addData("Lift Encoder Position Variable", TargetPosition);
-            telemetry.update();
+            LiftPosition += 756;
         }
-        Lift.setPower(0);
+        if (gamepad1.left_bumper) {
+            LiftPosition -= 756;
+        }
+
+        Lift.setTargetPosition(LiftPosition);
+        Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Lift.setPower(LiftPower);
 
         telemetry.addData("Lift Encoder Position", Lift.getCurrentPosition());
-        telemetry.addData("Lift Encoder Position Variable", TargetPosition);
         telemetry.update(); //update the telemetry
     }
 
@@ -107,5 +91,12 @@ public class EncoderTest extends OpMode {
     @Override
     public void stop() {
         Lift.setPower(0);
+    }
+
+    private void SetLiftPosition(int TargetPosition) {
+        Lift.setTargetPosition(TargetPosition);
+        Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        Lift.setPower(LiftPower);
     }
 }
