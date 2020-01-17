@@ -32,6 +32,8 @@ package org.firstinspires.ftc.robotcontroller.internal;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 /**
@@ -50,57 +52,68 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 /**
  * Gamepad 2:
- * Left trigger: place
- * Left bumper: open/close claw
- * Right bumper: Position 5
+ * Left trigger: open/close claw
+ * Right Trigger: Swivel
  * A: Position 1
  * B: Position 2
  * Y: Position 3
- * X: Position 4
  */
 @TeleOp(name = "TeleGabo", group = "Iterative Opmode")
 public class Gabo_Op extends OpMode {
+    enum Directions {
+        Up,
+        Down
+    }
     // Declare motors out here so we can use them globally
     private DcMotor FLM = null; //private class name = null
     private DcMotor FRM = null; //private because it's good coding practice
     private DcMotor BLM = null; //DcMotor because that is what we will be assigning it to
     private DcMotor BRM = null; //BRM because it is the Back Right Motor (can be anything you want but make it readable)
-    private DcMotor Suck = null;
-    private DcMotor Lift = null;
+    private DcMotor BigSuck = null;
+    private DcMotor SmallSuck = null;
+    private DcMotor UpLift = null;
 
     private Servo DragArm = null;
     private Servo LiftGrab = null;
     private Servo LiftSwivel = null;
+    private Servo Push = null;
 
     final private double DragArmRestPosition = 0.15;
     final private double DragArmDownPosition = 0.7;
     final private double LiftGrabRestPosition = 0.4;
     final private double LiftGrabGrabPosition = 0.02;
-    final private double LiftSwivelRestPosition = 1;
+    final private double LiftSwivelRestPosition = 0.91;
     final private double LiftSwivelOutPosition = 0;
+    final private double DragArmUpPosition = 0.3;
+    final private double PushRestPosition = 0;
+    final private double PushPushPosition = 1;
 
-    final private double SuckPower = 0.333;
+    final private double SmallSuckPower = 0.333;
+    final private double BigSuckPower = SmallSuckPower * 0.75;
     final private double LiftPower = 1;
 
-    final private int Position0Ticks = 0;
-    final private int Position1Ticks = 0;
-    final private int Position2Ticks = 6426;
-    final private int Position3Ticks = 14364;
-    final private int Position4Ticks = 22302;
-    final private int Position5Ticks = 28350;
+    final private double UpLiftRadius = 0.6765; //inches
+    final double UpInchesToTicks = (537.6/(2*3.14159* UpLiftRadius));//537.6 ticks per rev for neverest 20s
 
+    final private int Position0Inches = 0;
+    final private int Position1Inches = 0;
+    final private int Position2Inches = 8;
+    final private int Position3Inches = 17;
+    //final private int Position4Inches = 20;
+    //final private int Position5Inches = 25;
 
     private boolean LeftTrigger2 = false;
     private boolean RightTrigger2 = false;
-    private boolean LeftBumperPressed2 = false;
-    private boolean RightBumperPressed2 = false;
-    private boolean APressed2 = false;
-    private boolean BPressed2 = false;
-    private boolean YPressed2 = false;
-    private boolean XPressed2 = false;
+    //private boolean LeftBumperPressed2 = false;
+    //private boolean RightBumperPressed2 = false;
+    //private boolean APressed2 = false;
+    //private boolean BPressed2 = false;
+    //private boolean YPressed2 = false;
+    //private boolean XPressed2 = false;
     private boolean BPressed1 = false;
     private boolean YPressed1 = false;
     private boolean XPressed1 = false;
+    private boolean A1 = false;
 
     private final double Power = 0.5; //decimal number that won't be changed named Power
 
@@ -116,10 +129,14 @@ public class Gabo_Op extends OpMode {
         BLM = hardwareMap.get(DcMotor.class, "BLM"); //DcMotor.class because that is what the object is
         BRM = hardwareMap.get(DcMotor.class, "BRM");
 
-        Suck = hardwareMap.get(DcMotor.class, "SUCK");
+        BigSuck = hardwareMap.get(DcMotor.class, "BigSUCK");
+        SmallSuck = hardwareMap.get(DcMotor.class, "SmallSUCK");
+        SmallSuck.setDirection(DcMotor.Direction.REVERSE);
+        
+        UpLift = hardwareMap.get(DcMotor.class, "LIFT");
+        UpLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        UpLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        Lift = hardwareMap.get(DcMotor.class, "LIFT");
-        Lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         //Make it so we don't have to add flip the sign of the power we are setting to half the motors
         //FRM.setDirection(DcMotor.Direction.REVERSE); //Run the right side of the robot backwards
         FLM.setDirection(DcMotor.Direction.REVERSE);
@@ -140,7 +157,11 @@ public class Gabo_Op extends OpMode {
         LiftSwivel = hardwareMap.servo.get("SWIVEL");
         LiftSwivel.setPosition(LiftSwivelRestPosition);
 
-        telemetry.addData("Status", "Initialized");   //
+        Push = hardwareMap.get(Servo.class, "PUSH");
+        Push.setDirection(Servo.Direction.FORWARD);
+        Push.setPosition(PushRestPosition);
+
+        telemetry.addData("Status", "Initialized");
         telemetry.update();
     }
 
@@ -177,45 +198,35 @@ public class Gabo_Op extends OpMode {
             }
         } else if (YPressed1) YPressed1 = false;
 
-        if (gamepad2.right_bumper) {
-            SetLiftPosition(Position5Ticks);
-        } else if (gamepad2.a) {
-            SetLiftPosition(Position1Ticks);
+        if (gamepad2.a) {
+            SetLiftPosition(Position1Inches);
         } else if (gamepad2.b) {
-            SetLiftPosition(Position2Ticks);
+            SetLiftPosition(Position2Inches);
         } else if (gamepad2.y) {
-            SetLiftPosition(Position3Ticks);
-        } else if (gamepad2.x) {
-            SetLiftPosition(Position4Ticks);
+            SetLiftPosition(Position3Inches);
         } else if (gamepad2.left_bumper) {
-            if (Lift.getCurrentPosition() >= Position1Ticks) {
-                SetLiftPosition(Lift.getCurrentPosition() - 756);
+            if (UpLift.getCurrentPosition() >= Position1Inches * UpInchesToTicks) {
+                SetLiftPosition(UpLift.getCurrentPosition() - 756);
             } else {
-                SetLiftPosition(Position0Ticks);
-            }
-        } else if (gamepad2.right_bumper) {
-            if (Lift.getCurrentPosition() < Position5Ticks) {
-                SetLiftPosition(Lift.getCurrentPosition() + 756);
-            } else {
-                SetLiftPosition(Position5Ticks);
+                SetLiftPosition(Position0Inches);
             }
         } else {
-            Lift.setPower(0);
+            UpLift.setPower(0);
         }
 
         if (gamepad2.left_trigger == 1) {
             if (!LeftTrigger2) {
                 LeftTrigger2= true;
-                if (LiftGrab.getPosition() != LiftGrabRestPosition)
-                    LiftGrab.setPosition(LiftGrabRestPosition);
-                else LiftGrab.setPosition(LiftGrabGrabPosition);
+                if (LiftGrab.getPosition() != LiftGrabGrabPosition)
+                    LiftGrab.setPosition(LiftGrabGrabPosition);
+                else LiftGrab.setPosition(LiftGrabRestPosition);
             }
         } else if (LeftTrigger2) LeftTrigger2= false;
 
         if (gamepad2.right_trigger == 1) {
             if (!RightTrigger2) {
                 RightTrigger2 = true;
-                if (Lift.getCurrentPosition() > Position2Ticks) {
+                if (UpLift.getCurrentPosition() > Position2Inches) {
                     if (LiftSwivel.getPosition() != LiftSwivelRestPosition)
                         LiftSwivel.setPosition(LiftSwivelRestPosition);
                     else LiftSwivel.setPosition(LiftSwivelOutPosition);
@@ -226,10 +237,15 @@ public class Gabo_Op extends OpMode {
         if (gamepad1.b) {
             if (!BPressed1) {
                 BPressed1 = true;
-                if (Suck.getPower() == SuckPower) {
-                    Suck.setPower(0);
+                if (BigSuck.getPower() == BigSuckPower) {
+                    SmallSuck.setPower(0);
+                    BigSuck.setPower(0);
+
+                    DragArm.setPosition(DragArmRestPosition);
                 } else {
-                    Suck.setPower(SuckPower);
+                    BigSuck.setPower(BigSuckPower);
+                    SmallSuck.setPower(SmallSuckPower);
+                    DragArm.setPosition(DragArmUpPosition);
                 }
             }
         } else if (BPressed1) BPressed1 = false;
@@ -237,16 +253,28 @@ public class Gabo_Op extends OpMode {
         if (gamepad1.x) {
             if (!XPressed1) {
                 XPressed1 = true;
-                if (Suck.getPower() == -SuckPower) {
-                    Suck.setPower(0);
+                if (BigSuck.getPower() == -BigSuckPower) {
+                    BigSuck.setPower(0);
+                    SmallSuck.setPower(0);
                 } else {
-                    Suck.setPower(-SuckPower);
+                    BigSuck.setPower(-BigSuckPower);
+                    SmallSuck.setPower(-SmallSuckPower);
                 }
             }
         } else if (XPressed1) XPressed1 = false;
 
+        if (gamepad1.a) {
+            if (!A1) {
+                A1 = true;
+                if (Push.getPosition() == PushRestPosition) {
+                    Push.setPosition(PushPushPosition);
+                } else {
+                    Push.setPosition(PushRestPosition);
+                }
+            }
+        } else if (A1) A1 = false;
 
-        telemetry.addData("Servo Position", DragArm.getPosition());
+        telemetry.addData("Up Position", UpLift.getCurrentPosition());
         telemetry.update(); //update the telemetry
     }
 
@@ -259,20 +287,34 @@ public class Gabo_Op extends OpMode {
         if (FRM != null) FRM.setPower(0);
         if (BLM != null) BLM.setPower(0);
         if (BRM != null) BRM.setPower(0);
-        if (Suck != null) Suck.setPower(0);
-        if (Lift != null) Lift.setPower(0);
+        if (BigSuck != null) BigSuck.setPower(0);
+        if (SmallSuck != null) SmallSuck.setPower(0);
+        if (UpLift != null) UpLift.setPower(0);
         if (DragArm != null) DragArm.setPosition(DragArmRestPosition);
         if (LiftGrab != null) LiftGrab.setPosition(LiftGrabRestPosition);
         if (LiftSwivel != null) LiftSwivel.setPosition(LiftSwivelRestPosition);
     }
 
-
     private void SetLiftPosition(int TargetPosition) {
-        DragArm.setPosition(DragArmDownPosition);
+        DragArm.setPosition(DragArmUpPosition);
 
-        Lift.setTargetPosition(TargetPosition);
-        Lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        if (UpLift.getCurrentPosition() > Position2Inches * UpInchesToTicks && LiftGrab.getPosition() == LiftGrabRestPosition && LiftSwivel.getPosition() == LiftSwivelOutPosition) {
+            LiftSwivel.setPosition(LiftSwivelRestPosition);
+        }
 
-        Lift.setPower(LiftPower);
+        if (LiftSwivel.getPosition() != LiftSwivelOutPosition && LiftGrab.getPosition() == LiftGrabGrabPosition) {
+            if (UpLift.getCurrentPosition() < Position2Inches * UpInchesToTicks) {
+                UpLift.setTargetPosition((int)(Position2Inches * UpInchesToTicks));
+            } else {
+                LiftSwivel.setPosition(LiftSwivelOutPosition);
+                UpLift.setTargetPosition((int)(TargetPosition * UpInchesToTicks));
+            }
+        } else {
+            telemetry.addData("Lift Ticks", (int)(TargetPosition * UpInchesToTicks));
+            UpLift.setTargetPosition((int)(TargetPosition * UpInchesToTicks));
+        }
+
+        UpLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        UpLift.setPower(LiftPower);
     }
 }
