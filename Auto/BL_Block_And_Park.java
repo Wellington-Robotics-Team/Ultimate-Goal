@@ -63,6 +63,9 @@ public class BL_Block_And_Park extends LinearOpMode {
 
         Bot.RaiseArm();
 
+        Bot.RushB(Bot.MoveToFarPark);
+        Bot.StopRobot();
+
         Bot.DriveToTape(Bot.DirectionToTape);
         Bot.StopRobot();
 
