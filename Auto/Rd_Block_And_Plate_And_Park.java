@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.robotcontroller.internal;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 //This auto was made by Gabo Gang on Oct 15 2019
 
 @Autonomous(name = "Rd-Block and Plate and Park", group = "Rd")
+@Disabled
 public class Rd_Block_And_Plate_And_Park extends LinearOpMode {
     public class JankBot extends Robot {
         @Override
