@@ -45,15 +45,9 @@ public class Rd_Park_B extends LinearOpMode {
 
         waitForStart(); //waits for the start button
 
-        //Move to bricks
-        Bot.RushB(Bot.MoveToPlate);
-        Bot.StopRobot();
-
         Bot.DriveToTape(Bot.DirectionToTape);
         Bot.StopRobot();
 
         stop();
-
-
     }
 }
