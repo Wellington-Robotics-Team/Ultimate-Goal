@@ -45,11 +45,11 @@ public class Rd_Plate_And_Park extends LinearOpMode {
 
         waitForStart(); //waits for the start button
 
-        //Drive to plate. 17 cm from front wall, 30 cm to left wall
+        //Move to bricks
         Bot.RushB(Bot.MoveToPlate);
         Bot.StopRobot();
-
-        Bot.RushB(Bot.MoveToFarWall);
+        //move to black brick. 12 cm from first brick
+        Bot.RushB(Bot.MoveToMiddleOfPlate);
         Bot.StopRobot();
 
         Bot.DropArm();
@@ -59,9 +59,8 @@ public class Rd_Plate_And_Park extends LinearOpMode {
 
         Bot.RaiseArm();
 
-        Bot.Drive(0.3,0,0);
-        sleep(500);
         //drive to tape
+
 
         Bot.DriveToTape(Bot.DirectionToTape);
         Bot.StopRobot();
