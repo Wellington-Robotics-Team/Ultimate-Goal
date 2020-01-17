@@ -30,7 +30,7 @@ class Movement {
 
     private double Slope;
 
-    final private double MinPower = 0.15;
+    private double MinPower = 0.15;
 
     private Directions Direction;
     Movement(int Distance, int Correction, double MaxPower, Directions Direction) {
@@ -50,6 +50,10 @@ class Movement {
         return Distance + Correction;
     }
 
+    void setPowerSign(int sign) {
+        this.MaxPower *= sign;
+        this.MinPower *= sign;
+    }
     Directions getDirection() {
         return Direction;
     }
@@ -70,10 +74,13 @@ class Movement {
 
     double CalculatePower() {
         double distanceCubed = distanceTraveled * distanceTraveled * distanceTraveled;
-        double power = (   Slope * distanceCubed) + MaxPower; // the power is the x value in that position
+        double power = (Slope * distanceCubed) + MaxPower; // the power is the x value in that position
+
         if (power > MaxPower) power = MaxPower;
+        else if (power < -MaxPower) power = -MaxPower;
+
         else if (power < MinPower && power > 0) power = MinPower; //if the power is less than the min power level just set the power to the minpower level
-        else if (power <= 0) power = 0; //if its 0 then set it to 0 of course
+        else if (power > MinPower && power < 0) power = -MinPower;
 
         return power;
     }
