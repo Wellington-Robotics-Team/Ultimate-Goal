@@ -45,9 +45,9 @@ public class BL_Wait_And_Park extends LinearOpMode {
 
         waitForStart(); //waits for the start button
 
-        sleep(25 * 1000);
+        sleep(15 * 1000);
         //Move to bricks
-        Bot.RushB(Bot.MoveToBricks);
+        Bot.RushB(Bot.MoveToFarPark);
         Bot.StopRobot();
 
         Bot.DriveToTape(Bot.DirectionToTape.InverseDirection());
