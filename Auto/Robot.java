@@ -16,15 +16,18 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 public abstract class Robot {
-    final private double NormPower = 0.50; //The normal power to give to motors to drive
-    final private double MinPower = 0.15; //slowest it should do
+    final private double MaxPwr = 0.75;
+    final private double NormPower = 0.40; //The normal power to give to motors to drive
+    final private double MinPower = 0.20; //slowest it should do
 
-    Movement MoveToBricks = new Movement(10, 8, NormPower);
-    Movement MoveToWallWithBlock = new Movement(20, 8, NormPower);
+    Movement MoveToBricks = new Movement(7, 8, NormPower);
+    Movement MoveToWallWithBlock = new Movement(50, 0, NormPower);
     Movement MoveToOtherSideOfField = new Movement(110,5, NormPower);
-    Movement MoveToPlate = new Movement(10,8,NormPower);
-    Movement MoveToWallWithPlate = new Movement(10,3,NormPower);
-    Movement MoveToFarWall = new Movement(31, 5, NormPower);
+    Movement MoveToPlate = new Movement(10,0,NormPower);
+    Movement MoveToWallWithPlate = new Movement(10,5,MaxPwr);
+    Movement MoveToFarWall = new Movement(31, 9, NormPower);
+    Movement MoveToFarPark = new Movement(70,0, NormPower);
+    Movement MoveToMiddleOfPlate = new Movement(38, 5, NormPower);
 
     Movement.Directions DirectionToTape;
     Movement.Directions DirectionToScan;
@@ -112,6 +115,9 @@ public abstract class Robot {
             MoveToFarWall.SetDirection(Movement.Directions.Forward);
             DirectionToTape = Movement.Directions.Backwards;
             DirectionToScan = Movement.Directions.Backwards;
+
+            MoveToFarPark.SetDirection(Movement.Directions.Left);
+            MoveToMiddleOfPlate.SetDirection(Movement.Directions.Forward);
         } else {
             MoveToBricks.SetDirection(Movement.Directions.Right);
             DirectionToScan = Movement.Directions.Forward;
@@ -121,6 +127,11 @@ public abstract class Robot {
             MoveToPlate.SetDirection(Movement.Directions.Right);
             MoveToWallWithPlate.SetDirection(Movement.Directions.Left);
             DirectionToTape = Movement.Directions.Forward;
+
+            MoveToFarPark.SetDirection(Movement.Directions.Right);
+            MoveToMiddleOfPlate.SetDirection(Movement.Directions.Backwards);
+
+
         }
     }
 
@@ -138,6 +149,14 @@ public abstract class Robot {
      * Runs until it gets close to wall
      * slowly gets slower
      */
+    private boolean ShouldMove(boolean MovingTowards, double CurrentDistance, double TargetDistance) {
+        if (MovingTowards) {
+            return CurrentDistance > TargetDistance;
+        } else {
+            return CurrentDistance < TargetDistance;
+        }
+    }
+
     public void RushB(Movement Move) //moves with distance sensor. Slowly getting slower and slower
     {
         DistanceSensor TheDistanceSensor = null;
@@ -160,17 +179,29 @@ public abstract class Robot {
         if (TheDistanceSensor == null) {
             return;
         }
+        boolean MovingTowards = false;
+
+        if (Move.GetTotalDistance() > TheDistanceSensor.getDistance(DistanceUnit.CM)) {
+            Move.setPowerSign(-1);
+            MovingTowards = false;
+        }
+        else {
+            Move.setPowerSign(1);
+            MovingTowards = true;
+        }
 
         Move.setStartDistance(TheDistanceSensor.getDistance(DistanceUnit.CM));
 
-        while (AllowedToMove() && TheDistanceSensor.getDistance(DistanceUnit.CM) > Move.GetTotalDistance()) //while op mode is running and the distance to the wall is greater than the end distance
+        while (AllowedToMove() && ShouldMove(MovingTowards, TheDistanceSensor.getDistance(DistanceUnit.CM), Move.GetTotalDistance())) //while op mode is running and the distance to the wall is greater than the end distance
         {
             if (!AllowedToMove()) {
                 StopRobot();
                 return;
             }
             Move.UpdateDistanceTraveled(TheDistanceSensor.getDistance(DistanceUnit.CM)); //gets the current distance to the wall
-
+            AddToTelemetry("Distance", Double.toString(TheDistanceSensor.getDistance(DistanceUnit.CM)));
+            if (MovingTowards) AddToTelemetry("Direction", "True");
+            else AddToTelemetry("Direction", "False");
             double power = Move.CalculatePower();
 
             switch (Move.getDirection()) {
@@ -198,7 +229,7 @@ public abstract class Robot {
     }
 
     void ScanForSkyStone(Movement.Directions Direction) { //scan
-        while (AllowedToMove() && RightCS.alpha() > 700) { //while RightCS isn't detecting black
+        while (AllowedToMove() && RightCS.alpha() > 710) { //while RightCS isn't detecting black 3
             if (!AllowedToMove()) {
                 StopRobot();
                 return;
@@ -223,7 +254,7 @@ public abstract class Robot {
         float hsvValues[] = {0F, 0F, 0F}; //store values
 
         final int RedThreshold = 50; //Anything below this number will be considered red
-        final int BlueThreshold = 170; //Anything above this number will be considered blue
+        final int BlueThreshold = 160; //Anything above this number will be considered blue
 
         Color.RGBToHSV((int) (FloorCS.red() * SCALE_FACTOR), //get readings before starting
                 (int) (FloorCS.green() * SCALE_FACTOR),
@@ -241,14 +272,14 @@ public abstract class Robot {
                     Drive(-NormPower, 0, 0); //drive forward at the normal speed
                     break;
                 case Forward:
-                    Drive(NormPower, 0, 0); //drive forward at the normal speed
+                    Drive(0.3, 0, 0); //drive forward at the normal speed
                     break;
             }
         }
         //Driver pressed stop or we are on tape
     }
 
-    private void Drive(double forward, double sideways, double rotation) { //make a function to drive
+    void Drive(double forward, double sideways, double rotation) { //make a function to drive
         double correction = 0; //default correction
         if (rotation == 0) {
             if (forward != 0) {
