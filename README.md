@@ -1,2 +1,7 @@
-# Ultimate Goal
-Team 3903's source code for 2020-2021
+WElCOME TO TIMS PERSONAL CODE PLAYGROUND
+
+Enjoy your stay
+
+suggest additions
+
+Etc etc
