@@ -33,3 +33,5 @@ Adjustments while in auto line up:
 Gamepad 2	
 
 Climb the highest mountain and find the wisest elder so that he may tell you your pourpose in life. And whatever he says, it wont be being second driver cuz we don't need one.
+
+Test test
