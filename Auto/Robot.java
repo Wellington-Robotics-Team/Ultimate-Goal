@@ -20,14 +20,8 @@ public abstract class Robot {
     final private double NormPower = 0.40; //The normal power to give to motors to drive
     final private double MinPower = 0.20; //slowest it should do
 
-    Movement MoveToBricks = new Movement(7, 8, NormPower);
-    Movement MoveToWallWithBlock = new Movement(50, 0, NormPower);
-    Movement MoveToOtherSideOfField = new Movement(110,5, NormPower);
-    Movement MoveToPlate = new Movement(10,0,NormPower);
-    Movement MoveToWallWithPlate = new Movement(10,5,MaxPwr);
-    Movement MoveToFarWall = new Movement(31, 9, NormPower);
-    Movement MoveToFarPark = new Movement(70,0, NormPower);
-    Movement MoveToMiddleOfPlate = new Movement(38, 5, NormPower);
+    Movement MoveToZone = new Movement(7, 8, NormPower);
+
 
     Movement.Directions DirectionToTape;
     Movement.Directions DirectionToScan;
@@ -105,19 +99,9 @@ public abstract class Robot {
 
         ResetAngle();
     }
-    public Robot(boolean BlueSide) {
-        if (BlueSide) {
-            MoveToBricks.SetDirection(Movement.Directions.Right);
-            MoveToWallWithBlock.SetDirection(Movement.Directions.Left);
-            MoveToOtherSideOfField.SetDirection(Movement.Directions.Forward);
-            MoveToPlate.SetDirection(Movement.Directions.Right);
-            MoveToWallWithPlate.SetDirection(Movement.Directions.Left);
-            MoveToFarWall.SetDirection(Movement.Directions.Forward);
-            DirectionToTape = Movement.Directions.Backwards;
-            DirectionToScan = Movement.Directions.Backwards;
+    public Robot(boolean RightSide) {
+        if (RightSide) {
 
-            MoveToFarPark.SetDirection(Movement.Directions.Left);
-            MoveToMiddleOfPlate.SetDirection(Movement.Directions.Forward);
         } else {
             MoveToBricks.SetDirection(Movement.Directions.Right);
             DirectionToScan = Movement.Directions.Forward;
@@ -228,25 +212,6 @@ public abstract class Robot {
 
     }
 
-    void ScanForSkyStone(Movement.Directions Direction) { //scan
-        while (AllowedToMove() && RightCS.alpha() > 710) { //while RightCS isn't detecting black 3
-            if (!AllowedToMove()) {
-                StopRobot();
-                return;
-            }
-            AddToTelemetry("Alpha", Integer.toString(RightCS.alpha()));
-            switch (Direction) {
-                case Backwards:
-                    Drive(-MinPower, 0, 0); //backup
-                    break;
-                case Forward:
-                    Drive(MinPower, 0, 0); //backup
-                    break;
-
-            }
-            UpdateTelemetry();
-        }
-    }
 
     public void DriveToTape(Movement.Directions Direction) {
         final double SCALE_FACTOR = 255; //For color sensor readings (make differences more obvious
