@@ -1,6 +1,6 @@
-package org.firstinspires.ftc.robotcontroller.internal;
+package org.firstinspires.ftc.teamcode;
 
-class Movement {
+public class Movement {
     public enum Directions {
         Right,
         Left,
