@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.robotcontroller.internal;
+package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Color;
 
@@ -100,23 +100,6 @@ public abstract class Robot {
         ResetAngle();
     }
     public Robot(boolean RightSide) {
-        if (RightSide) {
-
-        } else {
-            MoveToBricks.SetDirection(Movement.Directions.Right);
-            DirectionToScan = Movement.Directions.Forward;
-            MoveToWallWithBlock.SetDirection(Movement.Directions.Left);
-            MoveToOtherSideOfField.SetDirection(Movement.Directions.Backwards);
-            MoveToFarWall.SetDirection(Movement.Directions.Backwards);
-            MoveToPlate.SetDirection(Movement.Directions.Right);
-            MoveToWallWithPlate.SetDirection(Movement.Directions.Left);
-            DirectionToTape = Movement.Directions.Forward;
-
-            MoveToFarPark.SetDirection(Movement.Directions.Right);
-            MoveToMiddleOfPlate.SetDirection(Movement.Directions.Backwards);
-
-
-        }
     }
 
     void DropArm() {
