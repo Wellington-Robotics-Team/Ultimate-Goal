@@ -113,17 +113,13 @@ public abstract class Robot {
     final private double MinPower = 0.20; //slowest it should do
     static Movement MoveToZone;
     Movement PathChoice = new Movement(36,8,NormPower);
-    public enum Path {
-        A,
-        B,
-        C;
-        public Path PathChoice(){
-            switch (this){
-                case A: //errors prolly here on 12/3/2020 check lines 112 and 114
+    public Movement Path(int pathChoice) {
+            switch (pathChoice){
+                case 0: //errors prolly here on 12/3/2020 check lines 112 and 114
                     MoveToZone = new Movement(7,8,NormPower);
-                case B: //errors prolly here on 12/3/2020 check lines 112 and 114
+                case 1: //errors prolly here on 12/3/2020 check lines 112 and 114
                     MoveToZone = new Movement(7,8,NormPower);
-                case C: //errors prolly here on 12/3/2020 check lines 112 and 114
+                case 2: //errors prolly here on 12/3/2020 check lines 112 and 114
                     MoveToZone = new Movement(7,8,NormPower);
 
 
@@ -131,7 +127,7 @@ public abstract class Robot {
             return null;
         }
 
-    }
+
 
 
 

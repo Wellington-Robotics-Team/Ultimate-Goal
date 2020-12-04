@@ -50,7 +50,8 @@ public class RightAPark extends LinearOpMode {
 
         waitForStart(); //waits for the start button
 
-        //Move to bricks
+        //Move to Zone
+        Bot.Path(0);
         Bot.RushB(Bot.MoveToZone);
         Bot.StopRobot();
         stop();
