@@ -105,22 +105,24 @@ class Movement {
 }
 
 
-
 public abstract class Robot {
     final private double FlyWheelPower = 0.9;
     final private double MaxPwr = 0.75; //the fastest it should go
     final public static double NormPower = 0.40; //The normal power to give to motors to drive
     final private double MinPower = 0.20; //slowest it should do
     static Movement MoveToZone;
-    Movement PathChoice = new Movement(36,8,NormPower);
+    static Movement MoveToCenterOfZone;
+
     public Movement Path(int pathChoice) {
             switch (pathChoice){
-                case 0: //errors prolly here on 12/3/2020 check lines 112 and 114
-                    MoveToZone = new Movement(7,8,NormPower);
-                case 1: //errors prolly here on 12/3/2020 check lines 112 and 114
-                    MoveToZone = new Movement(7,8,NormPower);
-                case 2: //errors prolly here on 12/3/2020 check lines 112 and 114
-                    MoveToZone = new Movement(7,8,NormPower);
+                case 0: //zone A
+                    MoveToZone = new Movement(60,8,NormPower, Movement.Directions.Forward);
+                    MoveToCenterOfZone = new Movement(12,8,NormPower, Movement.Directions.Left);
+                case 1: // Zone B
+                    MoveToZone = new Movement(36,8,NormPower,Movement.Directions.Backwards);
+                case 2: //Zone C
+                    MoveToZone = new Movement(12,8,NormPower,Movement.Directions.Forward);
+                    MoveToCenterOfZone = new Movement(12,8,NormPower,Movement.Directions.Left);
 
 
             }
@@ -153,8 +155,8 @@ public abstract class Robot {
     private double globalAngle; //the number of degrees the robot has turned
 
     //declare color sensor
-    private ColorSensor FloorCS = null;
-    private ColorSensor RightCS = null;
+   // private ColorSensor FloorCS = null;
+   // private ColorSensor RightCS = null;
 
 
 
@@ -175,10 +177,10 @@ public abstract class Robot {
         FRM.setDirection(DcMotor.Direction.REVERSE); //reverse the motors
         BLM.setDirection(DcMotor.Direction.REVERSE);
 
-        FloorCS = hardwareMap.get(ColorSensor.class, "FloorCS"); //get color sensor
-        FloorCS.enableLed(true);
-        RightCS = hardwareMap.get(ColorSensor.class, "RightCS");
-        RightCS.enableLed(true);
+        //FloorCS = hardwareMap.get(ColorSensor.class, "FloorCS"); //get color sensor
+       // FloorCS.enableLed(true);
+        //RightCS = hardwareMap.get(ColorSensor.class, "RightCS");
+        //RightCS.enableLed(true);
 
 
         //get distance sensors
@@ -289,36 +291,7 @@ public abstract class Robot {
     }
 
 
-    public void DriveToTape(Movement.Directions Direction) {
-        final double SCALE_FACTOR = 255; //For color sensor readings (make differences more obvious
 
-        float hsvValues[] = {0F, 0F, 0F}; //store values
-
-        final int RedThreshold = 50; //Anything below this number will be considered red
-        final int BlueThreshold = 160; //Anything above this number will be considered blue
-
-        Color.RGBToHSV((int) (FloorCS.red() * SCALE_FACTOR), //get readings before starting
-                (int) (FloorCS.green() * SCALE_FACTOR),
-                (int) (FloorCS.blue() * SCALE_FACTOR),
-                hsvValues);
-
-        while (AllowedToMove() && hsvValues[0] > RedThreshold && hsvValues[0] < BlueThreshold) { //run until the driver presses stop or its on red or blue tape
-            if (!AllowedToMove()) return;
-            Color.RGBToHSV((int) (FloorCS.red() * SCALE_FACTOR), //check readings again
-                    (int) (FloorCS.green() * SCALE_FACTOR),
-                    (int) (FloorCS.blue() * SCALE_FACTOR),
-                    hsvValues);
-            switch (Direction) {
-                case Backwards:
-                    Drive(-NormPower, 0, 0); //drive forward at the normal speed
-                    break;
-                case Forward:
-                    Drive(0.3, 0, 0); //drive forward at the normal speed
-                    break;
-            }
-        }
-        //Driver pressed stop or we are on tape
-    }
 
     void Drive(double forward, double sideways, double rotation) { //make a function to drive
         double correction = 0; //default correction
@@ -394,5 +367,31 @@ public abstract class Robot {
         correction = correction * CorrectionSensitivity;
 
         return correction;
+    }
+    void DriveToZone(Movement Move) {
+        Movement.Directions direction;
+        direction = Move.getDirection();
+        while (AllowedToMove()) {
+            switch (direction) {
+                case Forward:
+                    Drive(NormPower, 0, 0);
+                    break;
+                case Backwards:
+                    Drive(-NormPower, 0, 0);
+                    break;
+                case Left:
+                    Drive(0, NormPower, 0);
+                    break;
+                case Right:
+                    Drive(0, -NormPower, 0);
+                    break;
+                default:
+                    Drive(0, 0, 0);
+                    break;
+
+
+
+            }
+        }
     }
 }

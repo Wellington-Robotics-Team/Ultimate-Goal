@@ -10,15 +10,16 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 //This auto was made by SiB on 12/2/2020
 
 @Autonomous(name = "RightAPark", group = "Red")
-@Disabled
+
 public class RightAPark extends LinearOpMode {
     public class JankBot extends Robot {
         @Override
         public boolean AllowedToMove() {
             return opModeIsActive() && !isStopRequested();
         }
-        JankBot(boolean BlueSide) {
-            super(BlueSide);
+
+        JankBot() {
+            super(true);
         }
 
         @Override
@@ -37,22 +38,25 @@ public class RightAPark extends LinearOpMode {
         }
     }
 
-    private JankBot Bot = new JankBot(true);
+    private JankBot Bot = new JankBot();
 
     public void runOpMode() //when you press init
     {
         Bot.Init(hardwareMap);
 
         // Tell the driver that initialization is complete.
-        telemetry.addData("Status", "Initialized");
+        telemetry.addData("Sta" +
+                "us", "Initialized");
 
         telemetry.update();
 
         waitForStart(); //waits for the start button
 
+
         //Move to Zone
         Bot.Path(0);
         Bot.RushB(Bot.MoveToZone);
+        Bot.RushB(Bot.MoveToCenterOfZone);
         Bot.StopRobot();
         stop();
 
