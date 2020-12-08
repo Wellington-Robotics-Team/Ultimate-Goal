@@ -111,18 +111,18 @@ public abstract class Robot {
     final public static double NormPower = 0.40; //The normal power to give to motors to drive
     final private double MinPower = 0.20; //slowest it should do
     static Movement MoveToZone;
-    static Movement MoveToCorrectPath;
+    static Movement MoveToCenterOfZone;
 
     public Movement Path(int pathChoice) {
             switch (pathChoice){
                 case 0: //zone A
                     MoveToZone = new Movement(60,8,NormPower, Movement.Directions.Forward);
-                    MoveToCorrectPath = new Movement(12,8,NormPower, Movement.Directions.Right);
+                    MoveToCenterOfZone = new Movement(12,8,NormPower, Movement.Directions.Left);
                 case 1: // Zone B
-                    MoveToZone = new Movement(36,8,NormPower,Movement.Directions.Forward);
+                    MoveToZone = new Movement(36,8,NormPower,Movement.Directions.Backwards);
                 case 2: //Zone C
                     MoveToZone = new Movement(12,8,NormPower,Movement.Directions.Forward);
-                    MoveToCorrectPath = new Movement(12,8,NormPower,Movement.Directions.Right);
+                    MoveToCenterOfZone = new Movement(12,8,NormPower,Movement.Directions.Left);
 
 
             }
@@ -385,6 +385,10 @@ public abstract class Robot {
                 case Right:
                     Drive(0, -NormPower, 0);
                     break;
+                default:
+                    Drive(0, 0, 0);
+                    break;
+
 
 
             }
