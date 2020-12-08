@@ -45,16 +45,18 @@ public class RightAPark extends LinearOpMode {
         Bot.Init(hardwareMap);
 
         // Tell the driver that initialization is complete.
-        telemetry.addData("Status", "Initialized");
+        telemetry.addData("Sta" +
+                "us", "Initialized");
 
         telemetry.update();
 
         waitForStart(); //waits for the start button
-        
-        Bot.DriveToZone(Bot.MoveToZone);
+
+
         //Move to Zone
         Bot.Path(0);
-        Bot.DriveToZone(Bot.MoveToZone);
+        Bot.RushB(Bot.MoveToZone);
+        Bot.RushB(Bot.MoveToCenterOfZone);
         Bot.StopRobot();
         stop();
 
