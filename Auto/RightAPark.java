@@ -39,6 +39,17 @@ public class RightAPark extends LinearOpMode {
     }
 
     private JankBot Bot = new JankBot();
+    private Robot_Controller Robot = new Robot_Controller();
+        @Override
+        public void UpdateTelemetry() {
+
+        }
+
+        @Override
+        public void AddToTelemetry(String Tag, String Message) {
+
+        }
+    };
 
     public void runOpMode() //when you press init
     {
@@ -54,9 +65,10 @@ public class RightAPark extends LinearOpMode {
 
 
         //Move to Zone
-        Bot.Path(0);
-        Bot.RushB(Bot.MoveToZone);
-        Bot.RushB(Bot.MoveToCenterOfZone);
+        //Bot.Path(0);
+        //Bot.RushB(Bot.MoveToZone);
+        //Bot.RushB(Bot.MoveToCenterOfZone);
+        Bot.Drive(Robot.PDPower(Bot.MoveToZone),0,0);
         Bot.StopRobot();
         stop();
 
