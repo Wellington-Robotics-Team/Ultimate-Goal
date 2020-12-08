@@ -15,6 +15,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 //declaring the Movement class
 class Movement {
+
+
     public enum Directions {
         Right,
         Left,
@@ -67,6 +69,10 @@ class Movement {
     void setPowerSign(int sign) {
         this.MaxPower *= sign;
         this.MinPower *= sign;
+    }
+    public void setPower(double power) {
+        this.MaxPower = power;
+
     }
     Directions getDirection() {
         return Direction;
@@ -293,7 +299,7 @@ public abstract class Robot {
 
 
 
-    void Drive(double forward, double sideways, double rotation) { //make a function to drive
+    public void Drive(double forward, double sideways, double rotation) { //make a function to drive
         double correction = 0; //default correction
         if (rotation == 0) {
             if (forward != 0) {
