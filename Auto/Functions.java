@@ -52,6 +52,9 @@ public abstract class Functions {
         BRM  = hardwareMap.get(DcMotor.class, "BRM");
         FLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         FRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        BLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        BRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
 
         //FlyMotor = hardwareMap.get(DcMotorEx.class, "Fly");
 
@@ -104,12 +107,15 @@ public abstract class Functions {
         double currentPosition = Math.abs(FLM.getCurrentPosition());
         double previousPosition = Math.abs(FLM.getCurrentPosition());
         //double desiredTicks = InchesToTicks(Move.ForwardDistance());
-        while (currentPosition <= (desiredTicks + previousPosition) && CanMove()){
+        if (currentPosition <= (desiredTicks + previousPosition) && CanMove()){
         Drive(power,0,0);
         AddToTelemetry("Position:", String.valueOf(currentPosition));
         currentPosition = Math.abs(FLM.getCurrentPosition());
         previousPosition = currentPosition;
         UpdateTelemetry();
+        }
+        else{
+        Drive(0,0,0);
         }
     }
     protected double InchesToTicks(double inches){
