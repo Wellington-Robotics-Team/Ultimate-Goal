@@ -4,7 +4,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 //This auto was made by SiB on 12/2/2020
@@ -12,16 +11,16 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 @Autonomous(name = "RightAPark", group = "Red")
 
 public class RightAPark extends LinearOpMode {
-    public class JankBot extends Robot {
+
+    private UltimateGoalAuto UGA= new UltimateGoalAuto(telemetry);
+    private Function Function = new Function();
+
+
+    public class Function extends Functions {
         @Override
-        public boolean AllowedToMove() {
+        public boolean CanMove() {
             return opModeIsActive() && !isStopRequested();
         }
-
-        JankBot() {
-            super(true);
-        }
-
         @Override
         public void AddToTelemetry(String Tag, String message) {
             telemetry.addData(Tag, message);
@@ -32,30 +31,14 @@ public class RightAPark extends LinearOpMode {
             telemetry.update();
         }
 
-        @Override
-        public void Sleep(int Time) {
-            sleep(Time);
-        }
-    }
 
-    private JankBot Bot = new JankBot();
-    private Robot_Controller Robot = new Robot_Controller();
-        @Override
-        public void UpdateTelemetry() {
-
-        }
-
-        @Override
-        public void AddToTelemetry(String Tag, String Message) {
-
-        }
-    };
-
+}
     public void runOpMode() //when you press init
     {
-        Bot.Init(hardwareMap);
+        Function.Init(hardwareMap);
 
-        // Tell the driver that initialization is complete.
+
+        // Tell the driver tha,t initialization is complete.
         telemetry.addData("Sta" +
                 "us", "Initialized");
 
@@ -65,11 +48,8 @@ public class RightAPark extends LinearOpMode {
 
 
         //Move to Zone
-        //Bot.Path(0);
-        //Bot.RushB(Bot.MoveToZone);
-        //Bot.RushB(Bot.MoveToCenterOfZone);
-        Bot.Drive(Robot.PDPower(Bot.MoveToZone),0,0);
-        Bot.StopRobot();
+        Function.Path(0, UGA.MoveToZone);
+        Function.EncoderDrive(UGA.MoveToZone,.4);
         stop();
 
 
