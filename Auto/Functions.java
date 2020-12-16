@@ -106,15 +106,17 @@ public abstract class Functions {
     }
 
     public void EncoderDrive(Move Move, double power){
+        double motorPos = FLM.getCurrentPosition();
         double desiredTicks = InchesToTicks(Move.ForwardDistance());
-        double currentPosition = FLM.getCurrentPosition();
-        double previousPosition = FLM.getCurrentPosition();
+        double currentPosition = motorPos;
+        double previousPosition = motorPos;
         while (CanMove()){
-        if (currentPosition <= (desiredTicks + previousPosition) && CanMove()){
-            previousPosition = currentPosition;
-            currentPosition = Math.abs(FLM.getCurrentPosition());
+
+        if (currentPosition <= (desiredTicks + previousPosition)){
+            motorPos = Math.abs(FLM.getCurrentPosition());
+            currentPosition = motorPos;
         DriveTicks(power);
-        AddToTelemetry("Position:", String.valueOf(currentPosition));
+        AddToTelemetry("encoder:", String.valueOf(currentPosition));
         UpdateTelemetry();
         }
         else{
