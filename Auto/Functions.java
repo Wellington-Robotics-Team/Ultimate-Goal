@@ -107,10 +107,12 @@ public abstract class Functions {
 
     public void EncoderDrive(Move Move, double power){
         double desiredTicks = InchesToTicks(Move.ForwardDistance());
-        double currentPosition = 0;
-        double previousPosition = 0;
-        //double desiredTicks = InchesToTicks(Move.ForwardDistance());
+        double currentPosition = FLM.getCurrentPosition();
+        double previousPosition = FLM.getCurrentPosition();
+        while (CanMove()){
         if (currentPosition <= (desiredTicks + previousPosition) && CanMove()){
+            previousPosition = currentPosition;
+            currentPosition = Math.abs(FLM.getCurrentPosition());
         DriveTicks(power);
         AddToTelemetry("Position:", String.valueOf(currentPosition));
         UpdateTelemetry();
@@ -118,8 +120,8 @@ public abstract class Functions {
         else{
         DriveTicks(0);
         }
-        previousPosition = currentPosition;
-        currentPosition = Math.abs(FLM.getCurrentPosition());
+        }
+
     }
     protected double InchesToTicks(double inches){
         double tick = 31.0143327744;
@@ -205,8 +207,8 @@ public abstract class Functions {
     public void DriveTicks(double forward) { //make a function to drive
         double correction = 0; //default correction
         correction = CheckDirection(Math.abs(forward)); //if there isn't any rotation then use correction
-        FRM.setPower(-forward);
-        FLM.setPower(-forward);
+        FRM.setPower(forward);
+        FLM.setPower(forward);
         BRM.setPower(forward);
         BLM.setPower(forward);
     }
