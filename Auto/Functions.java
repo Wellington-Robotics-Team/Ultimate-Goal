@@ -16,6 +16,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
+import java.io.OutputStream;
+
 
 public abstract class Functions {
 
@@ -62,7 +64,7 @@ public abstract class Functions {
         FRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); //if we don't set it they will be in neutral and friction will slow it
         BLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         BRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        FRM.setDirection(DcMotor.Direction.REVERSE); //reverse the motors
+        FLM.setDirection(DcMotor.Direction.REVERSE); //reverse the motors
         BLM.setDirection(DcMotor.Direction.REVERSE);
 
 
@@ -102,26 +104,34 @@ public abstract class Functions {
         }
         //motor.getCurrentPosition() returns current ticks that encoder on the motor has tracked
     }
+
     public void EncoderDrive(Move Move, double power){
         double desiredTicks = InchesToTicks(Move.ForwardDistance());
-        double currentPosition = Math.abs(FLM.getCurrentPosition());
-        double previousPosition = Math.abs(FLM.getCurrentPosition());
+        double currentPosition = 0;
+        double previousPosition = 0;
         //double desiredTicks = InchesToTicks(Move.ForwardDistance());
         if (currentPosition <= (desiredTicks + previousPosition) && CanMove()){
-        Drive(power,0,0);
+        DriveTicks(power);
         AddToTelemetry("Position:", String.valueOf(currentPosition));
-        currentPosition = Math.abs(FLM.getCurrentPosition());
-        previousPosition = currentPosition;
         UpdateTelemetry();
         }
         else{
-        Drive(0,0,0);
+        DriveTicks(0);
         }
+        previousPosition = currentPosition;
+        currentPosition = Math.abs(FLM.getCurrentPosition());
     }
     protected double InchesToTicks(double inches){
         double tick = 31.0143327744;
         double TicksNeeded = inches * tick;
         return TicksNeeded;
+    }
+
+    public void CheckEncoders(){
+        while(CanMove()){
+        double output = FLM.getCurrentPosition();
+        AddToTelemetry("Output", String.valueOf(output));
+        UpdateTelemetry();}
     }
    // public void FlyPower(double power){
     //    double error = 0, P = 1;
@@ -187,18 +197,18 @@ public abstract class Functions {
             }
         }
 
-        FRM.setPower(-(forward + sideways + rotation) + correction);
-        FLM.setPower(-(forward - sideways - rotation) - correction);
+        FRM.setPower((forward + sideways + rotation) + correction);
+        FLM.setPower((forward - sideways - rotation) - correction);
         BRM.setPower((forward - sideways + rotation) + correction);
         BLM.setPower((forward + sideways - rotation) - correction);
     }
     public void DriveTicks(double forward) { //make a function to drive
         double correction = 0; //default correction
         correction = CheckDirection(Math.abs(forward)); //if there isn't any rotation then use correction
-        FRM.setPower(-forward + correction);
-        FLM.setPower(-forward - correction);
-        BRM.setPower(forward + correction);
-        BLM.setPower(forward - correction);
+        FRM.setPower(-forward);
+        FLM.setPower(-forward);
+        BRM.setPower(forward);
+        BLM.setPower(forward);
     }
     private double GetAngle()
     {
