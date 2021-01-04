@@ -595,7 +595,7 @@ Changes with version 3.2 include:
 * Includes many minor enhancements and fixes (too numerous to list).
 
 Known issues:
-* Auto complete function is incomplete and does not support the following (for now):
+* org.firstinspires.ftc.teamcode.Auto complete function is incomplete and does not support the following (for now):
      - Access via *this* keyword
      - Access via *super* keyword
      - Members of the super cloass, not overridden by the class
@@ -651,7 +651,7 @@ Changes include:
  * Publishes all the sources (not just a select few).
  * Includes Block programming improvements
     - Addition of optimized Vuforia blocks.
-    - Auto scrollbar to projects and sounds pages.
+    - org.firstinspires.ftc.teamcode.Auto scrollbar to projects and sounds pages.
     - Fixed blocks paste bug.
     - Blocks execute after while-opModeIsActive loop (to allow for cleanup before exiting op mode).
     - Added gyro integratedZValue block.
@@ -847,7 +847,7 @@ Changes include:
  * Fix mechanism added to all user to replace an electronic module easily.  For example, suppose a servo controller dies on your robot. You replace the broken module with a new module, which has a different serial number from the original servo controller.  You can use the Fix button to automatically reconfigure your configuration file to use the serial number of the new module.
  * Improvements made to fix resiliency and responsiveness of the system.
  * For LinearOpMode the user now must for a telemetry.update() to update the telemetry data on the driver station.  This update() mechanism ensures that the driver station gets the updated data properly and at the same time.
- * The Auto Configure function of the Robot Controller is now template based.  If there is a commonly used robot configuration, a template can be created so that the Auto Configure mechanism can be used to quickly configure a robot of this type.
+ * The org.firstinspires.ftc.teamcode.Auto Configure function of the Robot Controller is now template based.  If there is a commonly used robot configuration, a template can be created so that the org.firstinspires.ftc.teamcode.Auto Configure mechanism can be used to quickly configure a robot of this type.
  * The logic to detect a runaway op mode (both in the LinearOpMode and OpMode types) and to abort the run, then auto recover has been improved/implemented.
  * Fix has been incorporated so that Logitech F310 gamepad mappings will be correct for Marshmallow users.
 

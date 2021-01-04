@@ -1,27 +1,27 @@
 //Randomization A 
 //Move Wobble
 //Park on Launch Line
+
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 //This auto was made by SiB on 12/2/2020
 
-@Autonomous(name = "RightAPark", group = "Red")
+@Autonomous(name = "RightAPark")
 
 public class RightAPark extends LinearOpMode {
-    public class JankBot extends Robot {
+
+    private UltimateGoalAuto UGA= new UltimateGoalAuto(telemetry);
+    private Function Function = new Function();
+
+
+    public class Function extends Functions {
         @Override
-        public boolean AllowedToMove() {
+        public boolean CanMove() {
             return opModeIsActive() && !isStopRequested();
         }
-
-        JankBot() {
-            super(true);
-        }
-
         @Override
         public void AddToTelemetry(String Tag, String message) {
             telemetry.addData(Tag, message);
@@ -32,32 +32,26 @@ public class RightAPark extends LinearOpMode {
             telemetry.update();
         }
 
-        @Override
-        public void Sleep(int Time) {
-            sleep(Time);
-        }
-    }
 
-    private JankBot Bot = new JankBot();
-
+}
     public void runOpMode() //when you press init
     {
-        Bot.Init(hardwareMap);
+        Function.Init(hardwareMap);
 
-        // Tell the driver that initialization is complete.
-        telemetry.addData("Sta" +
-                "us", "Initialized");
+
+        // Tell the driver tha,t initialization is complete.
+        telemetry.addData("Status", "Initialized");
 
         telemetry.update();
 
-        waitForStart(); //waits for the start button
+        waitForStart(); //waits for t6he start button
 
 
         //Move to Zone
-        Bot.Path(0);
-        Bot.RushB(Bot.MoveToZone);
-        Bot.RushB(Bot.MoveToCenterOfZone);
-        Bot.StopRobot();
+        Function.EncoderPID(84,0);
+
+        //sleep(5000);
+        //Function.CheckEncoders();
         stop();
 
 
