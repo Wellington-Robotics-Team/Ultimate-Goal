@@ -116,7 +116,7 @@ public abstract class Functions {
         double motorPower, kP = 5;
         double error = desiredTicks - motorPos;
         double MaxError = error;
-        while (CanMove() && error > 0) {
+        while (CanMove() && Math.abs(error) > 10) {
             motorPos = Math.abs(FLM.getCurrentPosition());
             previousPosition = currentPosition;
             currentPosition = motorPos;
@@ -327,24 +327,9 @@ public abstract class Functions {
             UpdateTelemetry();
         }
     }
-    public boolean IsWhite(){
-        int red = CS.red();
-        int green = CS.green();
-        int blue = CS.blue();
 
-        if (red == green && green == blue) //NOT SURE IF THIS RIGHT
-            return true;
-        else return false;
-    }
     public void ParkOnTape(){
-        boolean isWhite = IsWhite();
-
-        while (isWhite == false && CanMove()){
-            DriveTicks(-NormPower);
-        }
-    }
-    public void ParkOnTapeEncoder(){
-
+        EncoderPID(84,0);
     }
 }
 
