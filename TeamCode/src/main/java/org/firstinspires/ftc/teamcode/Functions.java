@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Color;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
@@ -17,7 +16,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import android.graphics.Color;
 
 import java.io.OutputStream;
 
@@ -29,6 +27,7 @@ public abstract class Functions {
     private DcMotor BLM;
     private DcMotor BRM;
     private DcMotorEx FlyMotor;
+    private DcMotor IntakeMotor;
 
     private DistanceSensor TheDS;
     private DistanceSensor TheSideDS;
@@ -41,7 +40,6 @@ public abstract class Functions {
     private BNO055IMU imu;
     private Orientation lastAngles = new Orientation(); //sets the last angle to whatever the robot last had. This is just to avoid errors
 
-    private RevColorSensorV3 CS;
 
 
     private double globalAngle; //the number of degrees the robot has turned
@@ -60,6 +58,7 @@ public abstract class Functions {
         FRM  = hardwareMap.get(DcMotor.class, "FRM");
         BLM  = hardwareMap.get(DcMotor.class, "BLM");
         BRM  = hardwareMap.get(DcMotor.class, "BRM");
+        IntakeMotor = hardwareMap.get(DcMotor.class,"Intake");
 
         FLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         FRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -87,8 +86,6 @@ public abstract class Functions {
         BDS = hardwareMap.get(DistanceSensor.class, "BDS");
        /// Rev2mDistanceSensor sensorTimeOfFlight = (Rev2mDistanceSensor)RDS;
 */
-        CS = hardwareMap.get(RevColorSensorV3.class,"CS");
-        CS.enableLed(true);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu"); //gets the imu
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters(); //makes parameters for imu
@@ -124,7 +121,7 @@ public abstract class Functions {
             error = desiredTicks - motorPos;
             motorPower = (kP*error)/MaxError;
             if (motorPower>MaxPower) motorPower = MaxPower;
-            else if (motorPower< MinPower) motorPower = MinPower;
+            else if (motorPower< MinPower) motorPower =  MinPower;
             AddToTelemetry("error", String.valueOf(error));
             AddToTelemetry("current", String.valueOf(currentPosition));
             AddToTelemetry("Desired", String.valueOf(desiredTicks+previousPosition));
@@ -134,28 +131,6 @@ public abstract class Functions {
             DriveTicks(motorPower);
         }
     }
-
-    public void EncoderDrive(double distance, double correction) {
-        double motorPos = FLM.getCurrentPosition();
-        double desiredTicks = InchesToTicks(distance+correction);
-        double currentPosition = motorPos;
-        double previousPosition = motorPos;
-        while (CanMove() && (currentPosition <= (desiredTicks + previousPosition))) {
-            CheckEncoders();
-            motorPos = Math.abs(FLM.getCurrentPosition());
-            currentPosition = motorPos;
-            DriveTicks(.4);
-            AddToTelemetry("encoder:", String.valueOf(currentPosition));
-            AddToTelemetry("Desired Position:", String.valueOf(desiredTicks + previousPosition));
-            UpdateTelemetry();
-        }
-
-        DriveTicks(0);
-
-        }
-        //public void ParkOnTape(){
-        //}
-
 
 
     protected double InchesToTicks(double inches){
@@ -252,25 +227,36 @@ public abstract class Functions {
     public Move PathToZone(int pathChoice) {
         switch (pathChoice) {
             case 0: //zone A
-                MoveToZone = new Move(84, 12, NormPower, org.firstinspires.ftc.teamcode.Move.Direction.Forward);
+                MoveToZone = new Move(84, 12, NormPower, Move.Direction.Forward);
             case 1: // Zone B
-                MoveToZone = new Move(108, 36, NormPower, org.firstinspires.ftc.teamcode.Move.Direction.Forward);
+                MoveToZone = new Move(108, 36, NormPower, Move.Direction.Forward);
             case 2: //Zone C
-                MoveToZone = new Move(132, 12, NormPower, org.firstinspires.ftc.teamcode.Move.Direction.Forward);
+                MoveToZone = new Move(132, 12, NormPower, Move.Direction.Forward);
 
 
         }
         return null;
     }
-    public void TeleOp(double power, Gamepad gamepad1){
+    public void TeleOp(Gamepad gamepad1){
         double forward = gamepad1.right_stick_y;
         double strafe = gamepad1.right_stick_x;
         double turn = gamepad1.left_stick_x;
+        boolean intake = false;
+        //Intake Code
+        if (gamepad1.b == true && intake == false){
+            intake = true;
+            IntakeMotor.setPower(.75); //Change this if its too slow (0-1 range)
+        }
+        else if (gamepad1.b == true && intake == true){
+            intake = false;
+            IntakeMotor.setPower(0);
+        }
 
-        double FLMpower = (forward + strafe - turn)*power;
-        double FRMpower = (forward - strafe + turn)*power;
-        double BLMpower = (forward - strafe - turn)*power;
-        double BRMpower = (forward + strafe + turn)*power;
+
+        double FLMpower = (forward + strafe - turn)*NormPower;
+        double FRMpower = (forward - strafe + turn)*NormPower;
+        double BLMpower = (forward - strafe - turn)*NormPower;
+        double BRMpower = (forward + strafe + turn)*NormPower;
 
         double correction = 0; //default correction
         if (turn == 0) {
@@ -314,20 +300,106 @@ public abstract class Functions {
         }
     }
 
-    public void ReadColorSensor() {
-        while (CanMove()) {
-            int red = CS.red();
-            int green = CS.green();
-            int blue = CS.blue();
 
-            AddToTelemetry("red", String.valueOf(red));
-            AddToTelemetry("green", String.valueOf(green));
-            AddToTelemetry("blue", String.valueOf(blue));
+    enum Randomization{
+        A,
+        B,
+        C;
+    }
+    Randomization randomization;
 
-            UpdateTelemetry();
+    public void CheckRandomization(double rings){
+        double stack = rings;
+        if (stack == 0) {
+            randomization = Randomization.A;
+        }
+        if (stack == 1) {
+            randomization = Randomization.B;
+        }
+        if (stack == 4) {
+            randomization = Randomization.C;
+        }
+        AddToTelemetry("Randomization", String.valueOf(randomization));
+        UpdateTelemetry();
+    }
+    public void GoToZone(){
+        if (randomization == Randomization.A) {
+            Rotate(180,true);
+            EncoderPID(84, 0);
+        }
+        if (randomization == Randomization.B) {
+            Rotate(180,true);
+            EncoderPID(84, 12);
+        }
+        if (randomization == Randomization.C) {
+            Rotate(180,true);
+            EncoderPID(84, 24);
         }
     }
+    public void Rotate(double degrees, boolean onWall){
+        if (onWall == true){
+        Reverse(4,0);}
 
+
+        double MaxTurn = .2, MinTurn = -.2;
+        double motorPower, kP = 5;
+        double currentAngle = CurrAngle();
+        double Prev = CurrAngle();
+
+        double error = degrees - (currentAngle-Prev);
+        double MaxError = error;
+        while (CanMove() && Math.abs(error) > 20) {
+
+            currentAngle = CurrAngle();
+            error = degrees - (currentAngle-Prev);
+            motorPower = (kP*error)/MaxError;
+            if (motorPower>MaxTurn) motorPower = MaxTurn;
+            else if (motorPower< MinTurn) motorPower = MinTurn;
+            AddToTelemetry("error", String.valueOf(error));
+            AddToTelemetry("current", String.valueOf(currentAngle));
+            AddToTelemetry("Desired", String.valueOf(degrees));
+            AddToTelemetry("Speed", String.valueOf(motorPower));
+            FLM.setPower(-motorPower); BLM.setPower(-motorPower);
+            FRM.setPower(motorPower); BRM.setPower(motorPower);
+            UpdateTelemetry();
+
+
+    }
+        FLM.setPower(0); BLM.setPower(0);
+        FRM.setPower(0); BRM.setPower(0);
+    }
+    private double CurrAngle()
+    {
+        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES); //gets the angle
+
+        double deltaAngle = angles.firstAngle - lastAngles.firstAngle; //deltaAngle is the current angle minus the last angle it got
+
+        if (deltaAngle < -180) //switches it to use 0 to 360 instead of -180 to 180
+            deltaAngle += 360;
+        else if (deltaAngle > 180)
+            deltaAngle -= 360;
+
+
+        return deltaAngle; //returns the amount turned
+    }
+    public void Reverse(double distance, double correction) {
+        double motorPos = FLM.getCurrentPosition();
+        double desiredTicks = InchesToTicks(distance+correction);
+        double currentPosition = motorPos;
+        double previousPosition = motorPos;
+        while (CanMove() && (currentPosition < (desiredTicks + previousPosition))) {
+            motorPos = Math.abs(FLM.getCurrentPosition());
+            currentPosition = motorPos;
+            DriveTicks(-.4);
+            AddToTelemetry("encoder:", String.valueOf(currentPosition));
+            AddToTelemetry("Desired Position:", String.valueOf(desiredTicks + previousPosition));
+            UpdateTelemetry();
+        }
+
+        DriveTicks(0);
+
+    }
+    
     public void ParkOnTape(){
         EncoderPID(84,0);
     }
